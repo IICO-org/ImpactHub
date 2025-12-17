@@ -1,1 +1,18 @@
-Pipelines/Architecture-guard.yml
+jobs:
+- job: ArchitectureGuard
+  displayName: Architecture Guard
+  pool:
+    vmImage: ubuntu-latest
+
+  steps:
+  - script: |
+      echo "Checking EF navigation..."
+      if grep -R "HasOne<" src/Modules; then exit 1; fi
+
+      echo "Checking cross-schema FK..."
+      if grep -R "REFERENCES .*\\." . | grep -v ref; then exit 1; fi
+
+      echo "Checking migrations..."
+      if grep -R "Migration" src/Modules; then exit 1; fi
+
+      echo "Architecture OK"
