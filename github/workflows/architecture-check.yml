@@ -1,0 +1,26 @@
+name: Architecture Guard
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  ArchitectureGuard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Architecture Checks
+        run: |
+          echo "Checking EF navigation..."
+          #  حد ربط موديولين ببعض مباشرة
+          if grep -R "HasOne<" src/Modules 2>/dev/null; then echo "Violation found!"; exit 1; fi
+          
+          echo "Checking migrations..."
+          #   حد عمل Mapping يدوي  MiGration
+          if grep -R "Migration" src/Modules 2>/dev/null; then echo "Violation found!"; exit 1; fi
+
+          echo "Architecture OK"
