@@ -1,0 +1,12 @@
+ADR-002 – Database Externally Managed
+## Status
+Accepted
+
+## Decision
+EF Core will not manage schema or migrations.
+
+## Rationale
+Database is owned by DBA / legacy systems.
+
+## Consequences
+EF used for mapping and data access only.
