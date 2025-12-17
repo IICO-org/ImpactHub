@@ -48,3 +48,16 @@ Each module team owns:
 - EF mappings for its schema
 
 Database schemas are externally managed.
+
+## DEVELOPER ONBOARDING GUIDE (Short)
+
+## What you MUST know
+- One module = one schema
+- ID references only across modules
+- No FK across schemas
+- EF is adapter, not owner
+
+## What gets your PR rejected
+- Cross-module navigation
+- Cross-schema FK
+- Shared business DbContext
