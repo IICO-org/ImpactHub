@@ -1,0 +1,15 @@
+# Exclude VS filesـ Compilation
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+*.suo
+*.sln.docstates
+
+# Exclude and Prevent Settings Files to avoid stealing passwords if exists there
+.env
+appsettings.Development.json
+
+# Exclude OS files
+.DS_Store
+Thumbs.db
