@@ -1,0 +1,41 @@
+body {
+    margin: 0;
+    font-family: Segoe UI, system-ui;
+}
+
+/* Top bar */
+.top-bar {
+    height: 48px;
+    background: #0f172a;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px;
+}
+
+/* Portal layout */
+.portal-container {
+    display: flex;
+    height: calc(100vh - 48px);
+}
+
+/* Left nav */
+.side-nav {
+    width: 220px;
+    background: #f1f5f9;
+    padding: 12px;
+}
+
+/* Main */
+.main-content {
+    flex: 1;
+    padding: 20px;
+}
+
+/* Right panel */
+.right-panel {
+    width: 260px;
+    background: #f8fafc;
+    padding: 12px;
+}

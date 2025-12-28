@@ -1,0 +1,36 @@
+﻿@page
+@using Microsoft.AspNetCore.Authorization
+@using System.Security.Claims
+@attribute [Authorize]
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home - ImpactHub ERP</title>
+</head>
+<body>
+    <h1>Welcome to ImpactHub ERP</h1>
+    <p>You are logged in.</p>
+    <p>Ali Alenah.</p>
+
+    <hr />
+
+    <h3>Azure Claims (FINAL)</h3>
+
+    <ul>
+        <li>
+            <strong>Tenant ID:</strong>
+            @User.FindFirst("http://schemas.microsoft.com/identity/claims/tenantid")?.Value
+        </li>
+        <li>
+            <strong>User Object ID:</strong>
+            @User.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value
+        </li>
+        <li>
+            <strong>Email:</strong>
+            @User.FindFirst(ClaimTypes.Email)?.Value
+        </li>
+    </ul>
+
+</body>
+</html>

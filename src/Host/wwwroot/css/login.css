@@ -1,0 +1,66 @@
+﻿body {
+    margin: 0;
+    height: 100vh;
+    background: linear-gradient(135deg, #f8fafc, #eef2ff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Segoe UI", system-ui;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 440px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.12);
+    padding: 42px;
+}
+
+.tenant-brand {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.tenant-logo {
+    max-height: 72px;
+    margin-bottom: 14px;
+}
+
+.tenant-name {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.tenant-sub {
+    font-size: 14px;
+    color: #64748b;
+}
+
+    .tenant-sub.small {
+        font-size: 12px;
+    }
+
+.login-button {
+    width: 100%;
+    padding: 14px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+    .login-button img {
+        width: 18px;
+        margin-right: 8px;
+    }
+
+.footer {
+    margin-top: 24px;
+    font-size: 12px;
+    text-align: center;
+    color: #64748b;
+}

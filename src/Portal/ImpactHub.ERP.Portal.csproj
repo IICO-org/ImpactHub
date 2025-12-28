@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+		<RazorCompileOnBuild>true</RazorCompileOnBuild>
+		<RazorCompileOnPublish>true</RazorCompileOnPublish>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- Razor + MVC support -->
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- 🔗 REQUIRED: shared context used inside Portal -->
+		<ProjectReference Include="..\Shared\ImpactHub.ERP.SharedKernel.csproj" />
+	</ItemGroup>
+
+</Project>

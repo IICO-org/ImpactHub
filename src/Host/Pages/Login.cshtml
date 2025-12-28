@@ -1,0 +1,42 @@
+﻿@page "/login"
+@model ImpactHub.ERP.WebHost.Pages.LoginModel
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Sign in | ImpactHub ERP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="~/css/login.css" />
+</head>
+
+<body>
+    <div class="login-container">
+
+        <div class="tenant-brand">
+            <img src="/assets/ImpactHubLogo.png" class="tenant-logo" alt="Impact Hub ERP Logo" />
+
+            <div class="tenant-name">Impact Hub ERP</div>
+            <div class="tenant-sub">الهيئة الخيرية الإسلامية العالمية</div>
+            <div class="tenant-sub small">الكويت</div>
+        </div>
+
+        <!-- POST to this page (correct) -->
+        <form method="post">
+            <button type="submit" class="login-button">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" style="width:20px;margin-right:8px;" />
+                Sign in with Microsoft
+            </button>
+        </form>
+
+        <div class="footer">
+            © @DateTime.Now.Year ImpactHub ERP — Secure Enterprise Access
+        </div>
+
+    </div>
+</body>
+</html>

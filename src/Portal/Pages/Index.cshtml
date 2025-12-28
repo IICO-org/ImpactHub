@@ -1,0 +1,18 @@
+﻿@page
+@model ImpactHub.ERP.Portal.Pages.IndexModel
+
+<h1>Welcome to ImpactHub ERP</h1>
+<p>Portal Shell is ready.</p>
+public class IndexModel : PageModel
+{
+    private readonly ICurrentPortalContext _context;
+
+    public IndexModel(ICurrentPortalContext context)
+    {
+        _context = context;
+    }
+
+    public string Email => _context.User.Email;
+}
+<p>@Model.Email</p>
+

@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"] - ImpactHub ERP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+
+<body>
+
+    <!-- ================= TOP BAR ================= -->
+    <header class="top-bar">
+        <div class="top-left">
+            <span class="app-title">ImpactHub ERP</span>
+        </div>
+
+        <div class="top-right">
+            <span class="tenant-name">IICO</span>
+            <span class="user-name">User</span>
+        </div>
+    </header>
+
+    <!-- ================= PORTAL BODY ================= -->
+    <div class="portal-container">
+
+        <!-- LEFT NAV -->
+        <aside class="side-nav">
+            <ul>
+                <li>Projects</li>
+                <li>Donations</li>
+                <li>CRM</li>
+            </ul>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            @RenderBody()
+        </main>
+
+        <!-- RIGHT PANEL -->
+        <aside class="right-panel">
+            Right Panel
+        </aside>
+
+    </div>
+
+</body>
+</html>

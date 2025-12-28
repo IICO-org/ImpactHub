@@ -1,0 +1,37 @@
+﻿body {
+    margin: 0;
+    font-family: Segoe UI, Arial, sans-serif;
+}
+
+.topbar {
+    height: 56px;
+    background: #0f172a;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+}
+
+.app-shell {
+    display: flex;
+    height: calc(100vh - 56px);
+}
+
+.sidenav {
+    width: 220px;
+    background: #f1f5f9;
+    padding: 16px;
+}
+
+.content {
+    flex: 1;
+    padding: 24px;
+}
+
+.right-panel {
+    width: 260px;
+    background: #fafafa;
+    border-left: 1px solid #e5e7eb;
+    padding: 16px;
+}
