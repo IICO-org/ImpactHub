@@ -1,0 +1,104 @@
+# Authentication  
+IMPACT HUB ERP — Phase 1
+
+## 1. Purpose
+
+Authentication answers one question only:
+
+> “How does the system verify who is making this request?”
+
+This document describes authentication **conceptually**, without framework or code assumptions.
+
+---
+
+## 2. Supported User Types (Phase 1)
+
+The system supports two user categories:
+
+### Internal Users
+- Employees / staff
+- Authenticated via enterprise identity provider
+- Example: Microsoft Entra
+
+### Partner Users
+- External organizations or individuals
+- Authenticated via local credentials
+- Managed by the system
+
+Both map to the same internal principal model.
+
+---
+
+## 3. Authentication vs Authorization
+
+Authentication:
+- proves identity
+
+Authorization:
+- decides permissions
+
+**They are strictly separated.**
+
+Authentication never grants permissions.
+
+---
+
+## 4. Authentication Outputs (Contract)
+
+Regardless of provider, authentication must result in:
+
+- External identity tuple:
+  - Provider
+  - Issuer (optional)
+  - SubjectId
+
+This tuple is then resolved to:
+- UserId
+- TenantId
+
+---
+
+## 5. Internal User Authentication (Enterprise IdP)
+
+Conceptual flow:
+
+1. User authenticates with enterprise IdP
+2. System receives a signed token
+3. Token validation confirms:
+   - issuer
+   - signature
+   - expiration
+4. Extract SubjectId
+5. Resolve identity via `iam.UserIdentities`
+6. Resolve UserId → TenantId
+
+---
+
+## 6. Partner Authentication (Local)
+
+Conceptual flow:
+
+1. User submits username + password
+2. System validates credentials
+3. System resolves UserId
+4. System issues internal token
+5. Token contains:
+   - UserId
+   - TenantId
+   - Provider = `local`
+
+---
+
+## 7. Security Rules
+
+- Tokens must never be trusted blindly
+- TenantId must be resolved from DB, not client input
+- Identity resolution must be deterministic
+
+---
+
+## 8. Status
+
+- Phase: Foundation
+- Implementation: Pending
+- Stability: Locked
