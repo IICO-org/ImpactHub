@@ -186,3 +186,89 @@ This is the **single source of truth** for the UI.
 
 The UI must not call permission APIs repeatedly.
 It builds the entire UX from this profile.
+
+
+9. Sidebar & Routing Rules
+Sidebar Menu
+
+A module appears if:
+
+feature enabled AND
+
+user has at least one permission in that module
+
+Route Guards
+
+Route accessible if:
+
+user has required permission
+
+Otherwise:
+
+redirect to “Not Authorized”
+
+10. Buttons & Actions
+
+Every button must declare:
+
+Required permission
+
+Examples:
+
+“Create Project” → Projects.Write
+
+“Approve Donation” → Donations.Approve
+
+If permission missing:
+
+Button hidden OR disabled (design choice)
+
+API will still reject if called directly
+
+11. Consistency Rules (Non-Negotiable)
+Scenario	Expected Result
+UI allows action	API must allow
+UI blocks action	API may still block
+API allows	RLS may still block rows
+UI hides module	API still protected
+12. Common Anti-Patterns (DO NOT DO)
+
+❌ UI checks roles directly
+❌ UI hardcodes admin logic
+❌ UI assumes “admin can do everything”
+❌ UI infers write access from read access
+❌ UI trusts API responses without permission context
+
+13. Relationship to RLS
+
+UI decides what the user tries to do
+
+API decides whether the action is allowed
+
+RLS decides what data is returned
+
+Even if UI shows a list:
+
+RLS may return zero rows
+
+This is correct behavior
+
+14. Future Considerations (Phase 2+)
+
+Fine-grained UI policies (per-field)
+
+Contextual permissions (workflow states)
+
+Feature flags per tenant tier
+
+Mobile UI reuse (same access profile)
+
+15. Status
+
+Phase: Foundation
+
+Stability: Locked
+
+Enforcement: UI + API + DB
+
+Changes require architectural review
