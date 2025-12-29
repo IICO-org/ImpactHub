@@ -1,0 +1,276 @@
+# Phase 1 Build Checklist  
+IMPACT HUB ERP — Phase 1 (Foundation → Skeleton → Proof)
+
+> **Goal of Phase 1:**  
+> Deliver a secure, multi-tenant **foundation** with a working **App Shell skeleton**, **authentication**, **authorization**, and **RLS proof**, without implementing full business features yet.
+
+This checklist is **executable**.  
+If every item is checked, Phase 1 is complete.
+
+---
+
+## A. Phase 1 Definition (What “Done” Means)
+
+Phase 1 is **DONE** when:
+
+- Users can authenticate (Internal + Partner)
+- App Shell loads with correct experience
+- Sidebar, routes, and buttons are driven by Access Profile
+- API enforces permissions
+- Database enforces RLS
+- No cross-tenant leakage is possible
+- No business module logic is implemented yet (placeholders only)
+
+---
+
+## B. Backend — Mandatory Tasks
+
+### B1. Authentication (Identity Providers)
+
+#### Internal (Enterprise / Entra)
+- [ ] Validate enterprise JWT (issuer, signature, expiry)
+- [ ] Extract `(provider='entra', issuer, subjectId)`
+- [ ] Resolve identity via `iam.UserIdentities`
+- [ ] Reject if identity not found
+
+#### Partner (Local)
+- [ ] Username/password login endpoint
+- [ ] Validate credentials
+- [ ] Resolve `(provider='local', subjectId)`
+- [ ] Issue internal JWT
+
+**Done Criteria**
+- Both flows return a valid token
+- No auto-provisioning
+- No tenant chosen by client
+
+---
+
+### B2. Identity Resolution
+
+- [ ] Resolve `(Provider, Issuer, SubjectId)` → `UserId`
+- [ ] Reject request if mapping not found
+- [ ] Do not use provider-specific fields in `iam.Users`
+
+**Done Criteria**
+- All requests have a resolved `UserId`
+- Identity logic is centralized (one service)
+
+---
+
+### B3. Tenant Resolution
+
+- [ ] Load `TenantId` from `iam.Users`
+- [ ] Verify tenant is active
+- [ ] Reject if tenant inactive
+
+**Rules**
+- Client-supplied TenantId is ignored
+- Token TenantId is ignored
+
+**Done Criteria**
+- Every request is bound to exactly one tenant
+
+---
+
+### B4. Permission Loading & API Authorization
+
+- [ ] Load user permissions (flattened strings)
+- [ ] Enforce permissions at endpoint level
+- [ ] No role-based checks in controllers
+- [ ] `CanBypassDataScope` respected where applicable
+
+**Done Criteria**
+- Missing permission → 403
+- Permissions are tenant-scoped
+
+---
+
+### B5. Database Session Context (Critical)
+
+- [ ] Set `UserId` in SQL session context
+- [ ] Set `TenantId` in SQL session context
+- [ ] Ensure this runs **per request**
+- [ ] Ensure connection pooling does not leak context
+
+**Done Criteria**
+- RLS predicates always see correct context
+
+---
+
+### B6. RLS Proof (Do Not Roll Out Everywhere Yet)
+
+- [ ] RLS enabled on **at least one table** (Project.Projects)
+- [ ] Predicate + wrapper pattern works
+- [ ] Wrong tenant → zero rows
+- [ ] No session context → zero rows
+
+**Done Criteria**
+- RLS proven end-to-end
+- Pattern documented for reuse
+
+---
+
+## C. App Shell — Mandatory Tasks
+
+### C1. App Shell Skeleton
+
+- [ ] Separate project from backend (`/app-shell`)
+- [ ] Global layout (header + sidebar + content)
+- [ ] Loading and error states
+
+**Done Criteria**
+- App loads with shell even if modules are placeholders
+
+---
+
+### C2. Login Entry Points
+
+- [ ] Internal login (Entra button)
+- [ ] Partner login (username/password)
+- [ ] Unified post-login flow
+
+**Done Criteria**
+- Both login types land in App Shell
+
+---
+
+### C3. Access Profile Consumption
+
+- [ ] Call `/api/me/access-profile` after login
+- [ ] Store profile in global state
+- [ ] Treat profile as immutable
+
+**Done Criteria**
+- No UI renders before profile is loaded
+
+---
+
+### C4. Sidebar & Navigation
+
+- [ ] Build sidebar from:
+  - enabled features
+  - permissions
+  - experience
+- [ ] Hide modules not allowed
+
+**Done Criteria**
+- Sidebar reflects backend truth only
+
+---
+
+### C5. Routing & Guards
+
+- [ ] All routes defined (per route-map.md)
+- [ ] Feature guard applied
+- [ ] Permission guard applied
+- [ ] Cross-experience routes blocked
+
+**Done Criteria**
+- Unauthorized routes never render
+
+---
+
+### C6. Read vs Write UI Behavior
+
+- [ ] Read-only screens render correctly
+- [ ] Write actions hidden or disabled without permission
+- [ ] No write implied by read
+
+**Done Criteria**
+- UI behavior matches permission semantics exactly
+
+---
+
+## D. Experiences — Mandatory Scaffolding
+
+### D1. Admin Experience
+- [ ] `/admin` route
+- [ ] All core modules visible (placeholders)
+- [ ] Settings screens stubbed
+
+### D2. Partner Experience
+- [ ] `/partner` route
+- [ ] Restricted modules only
+- [ ] No admin or settings screens
+
+### D3. Donor Experience
+- [ ] `/donor` route
+- [ ] Donor-only placeholders
+- [ ] No ERP modules
+
+### D4. Executive Experience
+- [ ] `/executive` route
+- [ ] Dashboard placeholders
+- [ ] Read-only UX
+
+**Done Criteria**
+- Each experience loads correct shell + routes
+
+---
+
+## E. Testing — Security Smoke Tests (Mandatory)
+
+### E1. Authentication Tests
+- [ ] Internal login succeeds
+- [ ] Partner login succeeds
+- [ ] Invalid token rejected
+
+### E2. Authorization Tests
+- [ ] Missing permission → 403
+- [ ] Correct permission → 200
+
+### E3. RLS Tests
+- [ ] Same user, wrong tenant → zero rows
+- [ ] No session context → zero rows
+- [ ] Bypass privilege works (controlled)
+
+### E4. UI Tests
+- [ ] Sidebar hides forbidden modules
+- [ ] Buttons disabled/hidden correctly
+- [ ] Routes blocked correctly
+
+---
+
+## F. Explicit Non-Goals (DO NOT BUILD IN PHASE 1)
+
+- ❌ Full CRUD screens for modules
+- ❌ Complex workflows
+- ❌ Reporting dashboards
+- ❌ Mobile app
+- ❌ Microservices split
+- ❌ Multi-tenant schema/db separation
+
+---
+
+## G. Phase 1 Exit Criteria (FINAL)
+
+Phase 1 is officially complete when:
+
+- [ ] All Backend tasks (B) complete
+- [ ] All App Shell tasks (C) complete
+- [ ] All Experiences scaffolded (D)
+- [ ] All Smoke Tests passing (E)
+- [ ] No security shortcuts exist
+- [ ] All documentation committed
+
+Only **after this** may Phase 2 begin.
+
+---
+
+## H. What Phase 2 Will Add (Preview)
+
+- Module-by-module implementation
+- Full RLS rollout per module
+- Feature subscriptions
+- Reporting & BI
+- Mobile reuse
+
+---
+
+## Status
+
+- Phase: 1
+- Scope: Foundation + Skeleton
+- Stability: Locked
+- Ownership: Architecture & Security Team
