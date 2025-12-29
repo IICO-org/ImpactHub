@@ -1,0 +1,197 @@
+# Security Database Reference  
+IMPACT HUB ERP — Phase 2 Engineering Reference
+
+## 1) Purpose
+This document explains the **security-related database schema** and how the parts relate:
+- Identity (who the user is)
+- Authentication bindings (how they log in)
+- RBAC (roles/permissions)
+- ABAC (data scopes)
+- RLS (row-level enforcement)
+
+This is intended for developers and architects joining later.
+
+---
+
+## 2) Schemas
+- `iam`  
+  Identity + authentication bindings + RBAC + audit/logging
+- `DataScope`  
+  ABAC data access dimensions (scopes used by RLS)
+
+---
+
+## 3) Identity (Principal)
+### Table: `iam.Users`
+**Purpose:** internal principal record used everywhere in the system.
+
+Key columns:
+- `UserID` (PK)
+- `TenantID` (FK → `iam.Tenants`)
+- `Email`
+- `UsernameEn` (for local login identifier)
+- `AuthProvider` (1=Entra, 2=LocalPartner)
+- `IsActive`, `IsSystemAdmin`, `IsDeleted`
+- `CanBypassDataScope` (privilege)
+
+**Rules:**
+- The system uses `UserID` as the authoritative identity key.
+- Tenant is resolved from `iam.Users.TenantID` (not client input).
+
+---
+
+## 4) External Identity Binding
+### Table: `iam.UserIdentities`
+**Purpose:** binds external identity providers to internal user.
+
+Key columns:
+- `UserIdentityId` (PK)
+- `UserId` (FK → `iam.Users`)
+- `Provider` (`entra` | `local`)
+- `Issuer` (optional, recommended for Entra multi-issuer)
+- `SubjectId` (external stable identifier)
+- `IsActive`
+
+**Rules:**
+- `(Provider, Issuer, SubjectId)` is unique (one external identity maps to one user).
+- Authentication always resolves the user via this table.
+
+---
+
+## 5) Local Credentials
+### Table: `iam.UserAuth`
+**Purpose:** stores password hash/salt for local users (partners).
+
+Key columns:
+- `UserAuthId` (PK)
+- `UserId` (FK → `iam.Users`)
+- `PasswordHash`, `PasswordSalt`
+- `LastPasswordChange`
+- `MustChangePassword`
+
+**Rule:**
+- Only used when `AuthProvider = LocalPartner` (partners).
+- Never used for Entra-based users.
+
+---
+
+## 6) Tenant & Feature Gating
+### Table: `iam.Tenants`
+**Purpose:** SaaS tenant root.
+
+Key columns:
+- `TenantId` (PK)
+- `Code`, `NameEn`, `DomainName`
+- `IsActive`
+
+### Tables: `iam.Features`, `iam.TenantFeatures`
+**Purpose:** tenant module subscriptions / feature flags.
+
+- `iam.Features` defines available feature codes (Projects, Donations, …)
+- `iam.TenantFeatures` maps tenant → enabled features
+
+**Used by:**
+- App Shell sidebar generation
+- route gating (feature gate)
+- backend feature restrictions
+
+---
+
+## 7) RBAC (Roles + Permissions)
+### Table: `iam.Roles`
+Defines role/group.
+
+### Table: `iam.Permissions`
+Defines permission codes used by API and UI:
+- `Projects.Read`
+- `Projects.Write`
+- `Donations.Approve`
+etc.
+
+### Table: `iam.RolePermission`
+Defines role → permission mapping.
+Unique on `(RoleId, PermissionId)`.
+
+### Table: `iam.AccessAssignment`  ✅ AUTHORITATIVE MEMBERSHIP TABLE
+Defines user → role assignments, with workflow.
+
+Key columns:
+- `UserId` (FK → `iam.Users`)
+- `RoleId` (FK → `iam.Roles`)
+- `TenantId`
+- `Status` (`Pending` | `Active` | `Revoked`)
+- `IsDeleted`
+- `AssignedBy` (FK → `iam.Users`)
+- timestamps
+
+**Rules:**
+- Only assignments with `Status='Active' AND IsDeleted=0` are effective.
+- Unique index prevents duplicate active role assignment per user/role/tenant.
+
+**Meaning:**
+- User can have multiple roles (multiple rows).
+- Permissions are resolved through join:
+  `AccessAssignment → RolePermission → Permissions`
+
+---
+
+## 8) ABAC / Data Scopes
+### Table: `DataScope.SecurityDimensionType`
+Defines dimension types (enum-like):
+- 1 ProjectCategory
+- 2 Office
+- 3 Country
+- 4 Continent
+(IDs must never change)
+
+### Table: `DataScope.UserSecurityScope`
+Defines per-user scope entries:
+- TenantId (NOT NULL)
+- UserId
+- DimensionTypeId
+- DimensionValueId
+- IsExclude
+- CanRead, CanWrite
+- IsActive
+
+**Rules:**
+- Inclusion entries grant access.
+- Exclusion entries override inclusion (deny priority).
+
+---
+
+## 9) Row Level Security (RLS)
+### Core Predicate: `dbo.fn_ProjectVisibilityPredicate`
+Applies tenant and ABAC rules using:
+- session context `UserId`
+- row `TenantId`, Office/Country/Category dimensions
+- bypass privilege `CanBypassDataScope`
+
+### Wrapper predicate (per table) example:
+- `dbo.fn_ProjectProjects_RlsPredicate`
+
+### Security Policy example:
+- `dbo.ProjectProjects_RLSPolicy` on `Project.Projects`
+
+**Key rule:**
+- Backend must set SQL session context per request:
+  - `UserId`
+  - `TenantId`
+
+---
+
+## 10) Logging / Auditing (Optional Phase 2 usage)
+- `iam.AuditLogs`
+- `iam.LoginAttempt`
+- `iam.UserSession` (only if you intentionally implement session tracking)
+
+---
+
+## 11) Summary: Authoritative Sources (Very Important)
+- User identity: `iam.Users`
+- External login mapping: `iam.UserIdentities`
+- Local password: `iam.UserAuth`
+- Role membership: `iam.AccessAssignment` (ONLY)
+- Permissions: `iam.Permissions` + `iam.RolePermission`
+- Data access scope: `DataScope.UserSecurityScope`
+- Tenant isolation enforcement: RLS in DB
