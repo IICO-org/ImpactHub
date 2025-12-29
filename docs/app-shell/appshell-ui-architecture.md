@@ -1,294 +1,319 @@
-# Portal UI Architecture (Shell, Routing, Access Control)
+# App Shell Architecture  
 IMPACT HUB ERP — Phase 1
 
-## 1. Purpose
+## 1. Purpose of This Document
 
-This document defines the Portal UI architecture for Phase 1.
+This document defines the **App Shell** architecture for IMPACT HUB ERP.
 
 It explains:
-- the Portal project boundaries (separate from WebHost)
-- the Portal shell and navigation model
-- routing and route guards
-- how the portal consumes the backend “UI Access Profile”
-- how read/write UI behavior is enforced consistently
+- what the App Shell is and is not
+- its responsibilities and boundaries
+- how it hosts multiple user experiences
+- how it integrates with backend security (auth, permissions, RLS)
+- how it evolves without breaking the system
 
-This document is standalone and assumes no prior UI documentation.
+This document is **standalone** and assumes:
+- no prior UI documentation
+- no frontend framework assumptions
+- no existing codebase
+
+It is intended to be read by:
+- frontend developers
+- backend developers
+- solution architects
+- future maintainers
 
 ---
 
-## 2. Phase 1 UI Scope (What We Build Now)
+## 2. What Is the App Shell?
 
-Phase 1 UI is a **skeleton portal**, not full module screens.
+The **App Shell** is the **shared UI foundation** of the system.
 
-### Included
-- Login entry points:
-  - Internal (Entra)
-  - Partner (Local)
-- Portal Shell:
-  - sidebar navigation
-  - header (tenant/user)
-  - module placeholders
-- Route structure for all modules (stubs)
-- UI access control:
+It is **not** a portal for a specific audience.
+
+Instead, it is:
+- the single entry point to the UI
+- the host for multiple user experiences
+- the place where security context is initialized and applied
+
+### Definition
+
+> **App Shell**  
+> A shared UI container responsible for authentication entry, layout, routing, access control, and experience hosting.
+
+---
+
+## 3. What the App Shell Is NOT
+
+The App Shell is **not**:
+- a business module
+- a replacement for backend authorization
+- a place to implement business rules
+- a database client
+- a single-user portal
+
+Business logic lives in:
+- backend modules
+- backend authorization services
+- database RLS
+
+The App Shell consumes decisions; it does not invent them.
+
+---
+
+## 4. App Shell in the Overall Architecture
+
+High-level position:
+
+Browser
+↓
+App Shell
+↓
+REST APIs (WebHost)
+↓
+Authorization Services
+↓
+Database (RLS enforced)
+
+
+The App Shell:
+- never bypasses the backend
+- never talks directly to the database
+- never trusts client-side logic alone
+
+---
+
+## 5. Experiences Hosted by the App Shell
+
+The App Shell hosts **multiple experiences**.
+
+An **experience** is a bounded UI context for a specific audience.
+
+### Phase 1 Experiences
+
+| Experience | Target Users |
+|-----------|--------------|
+| Admin | Internal staff & operations |
+| Partner | External partners |
+| Donor | Donors / public users |
+| Executive | Top management |
+
+All experiences:
+- share the same shell
+- share authentication and security
+- differ in routes, menus, and permissions
+
+---
+
+## 6. Repository Structure (UI)
+
+Recommended structure:
+
+/app-shell
+/src
+/layout # shell layout (header, sidebar, footer)
+/routing # route definitions & guards
+/guards # feature & permission guards
+/auth # login flows (entra, local)
+/state # global state (access profile)
+/services # API clients
+/ui # shared UI components
+
+/experiences
+/admin
+/partner
+/donor
+/executive
+
+package.json
+
+
+Key rule:
+> Experiences never implement their own shell or security logic.
+
+---
+
+## 7. Responsibilities of the App Shell
+
+### 7.1 Authentication Entry
+
+The App Shell:
+- provides login entry points
+- supports:
+  - internal (enterprise IdP)
+  - partner (local credentials)
+
+After authentication:
+- the shell fetches the **Access Profile**
+- no UI is rendered before that
+
+---
+
+### 7.2 Global Layout
+
+The App Shell owns:
+- sidebar navigation
+- top header
+- content container
+- global loading & error states
+
+Experiences render **inside** the shell.
+
+---
+
+### 7.3 Routing & Navigation
+
+The App Shell:
+- defines all application routes
+- applies route guards
+- delegates route rendering to experiences
+
+Experiences:
+- do not define top-level routes independently
+- do not bypass guards
+
+---
+
+### 7.4 Access Control (UI Layer)
+
+The App Shell:
+- consumes the **Access Profile**
+- applies:
   - feature gating
   - permission gating
-  - read-only vs editable behavior
+- controls:
+  - menu visibility
+  - route accessibility
+  - read vs write UI behavior
 
-### Excluded
-- Complex business screens for each module
-- Offline / branch complex workflows
-- Advanced dashboards (Phase 2+)
-
----
-
-## 3. Project Boundary Rules (Non-Negotiable)
-
-### Separate projects
-- `WebHost` = APIs + security + backend domain modules
-- `Portal`  = UI only
-
-### Portal MUST NOT:
-- contain business logic
-- bypass API authorization
-- query database directly
-
-### Portal MUST:
-- work entirely via REST API calls
-- apply UI access control using the access profile
-- show consistent “read vs write” UX
+The App Shell **never** hardcodes permissions.
 
 ---
 
-## 4. Portal Structure (High Level)
+## 8. Access Profile Integration (Critical)
 
-Recommended portal structure (conceptual):
+After login, the App Shell must fetch:
 
-/Portal
-/src
-/app
-/layout
-/routes
-/guards
-/services
-/state
-/ui
-/modules
-/projects
-/donations
-/donors
-... (stubs)
-/auth
-/entra
-/local
-/public
+> **Access Profile** (single API call)
 
+This profile contains:
+- tenant info
+- enabled features
+- user permissions
+- user flags
 
-The goal is clean separation:
-- Auth (login)
-- Shell (layout)
-- Guards (access checks)
-- Module stubs (routes + placeholders)
+The App Shell:
+- stores it in global state
+- treats it as immutable for the session
+- rebuilds UI from it
+
+No other permission source is allowed in the UI.
 
 ---
 
-## 5. Portal Shell Layout
+## 9. Feature Gating vs Permission Gating
 
-Portal shell is the permanent frame that contains:
-- left sidebar
-- top header bar
-- main content area
-
-### Shell must show
-- Tenant name
-- User display name
-- Environment marker (DEV/PROD)
-
-### Shell must support
-- Module navigation
-- Responsive layout (desktop first)
-- Ability to add module tiles later
-
----
-
-## 6. Navigation Model (Sidebar)
-
-Sidebar entries are built from:
-1) Tenant enabled features
-2) User permissions
-
-### Rule
-A module appears in the sidebar if:
-- tenant has the module enabled AND
-- user has at least one permission in that module
+### Feature Gating (Tenant-level)
+Controls:
+- whether a module exists at all
 
 Example:
-- Tenant enabled: Projects
-- User permissions: Projects.Read
-→ Show Projects menu
-
-If tenant has Projects but user has none:
-→ Hide Projects menu
+- Tenant does not have “Donations” → hide Donations everywhere
 
 ---
 
-## 7. Routing Strategy
+### Permission Gating (User-level)
+Controls:
+- what the user can do inside an enabled module
 
-Each module has:
-- root route
-- list route
-- details route
-- create/edit routes (if write permission exists)
+Example:
+- User has `Projects.Read` but not `Projects.Write`
+  → show Projects, but read-only
 
-Example for Projects:
-- `/projects`
-- `/projects/list`
-- `/projects/:id`
-- `/projects/new`
-- `/projects/:id/edit`
-
-In Phase 1, these can be placeholders:
-- list view stub
-- detail view stub
-- “not implemented” messages
-
-But routing must be real so the shell is future-proof.
+Both gates must pass for a screen/action to be available.
 
 ---
 
-## 8. Route Guards (Access Control)
+## 10. Read vs Write UX Semantics
 
-Every route declares:
-- required feature
-- required permission
+The App Shell enforces consistent semantics:
 
-### Example route guard rule
-- `/projects/list`
-  - feature: Projects
-  - permission: Projects.Read
+### Read Permission
+- view lists
+- view details
+- access routes
 
-- `/projects/new`
-  - feature: Projects
-  - permission: Projects.Write
-
-If guard fails:
-- Redirect to `/not-authorized`
-- Or render a not-authorized component
-
-Route guards must be centralized (not scattered in components).
-
----
-
-## 9. UI Access Profile (Single Source of Truth)
-
-After successful login, the portal must fetch:
-
-> **UI Access Profile** from the backend (one call)
-
-The profile provides:
-- Tenant enabled features (modules)
-- User permissions (flattened list)
-- User flags (e.g., CanBypassDataScope)
-
-Portal stores this profile in a global state store.
-
-The portal must NOT:
-- query permissions repeatedly
-- guess permissions from roles
-- hardcode admin logic
-
----
-
-## 10. Read vs Write UX Rules
-
-### If user has Read only
-- show list & details pages
-- show forms as read-only
-- hide create/edit/delete buttons
-
-### If user has Write
+### Write Permission
 - show create/edit buttons
 - enable form fields
-- enable save actions
+- allow submit actions
 
-Write must never be implied from Read.
-
----
-
-## 11. Error UX Standardization
-
-Portal must handle these cases consistently:
-
-- 401 Unauthorized (token invalid/expired)
-  - redirect to login
-- 403 Forbidden (permission missing)
-  - show “Not Authorized”
-- 200 Empty list (RLS filtered rows)
-  - show empty state, not an error
-
-RLS “no rows” is normal behavior.
+Write permission is **never implied** by Read.
 
 ---
 
-## 12. Authentication UX Flow
+## 11. Error Handling & UX Standards
 
-### Internal (Entra)
-- click “Login with Entra”
-- complete provider login
-- portal receives token
-- portal calls backend access profile
-- portal loads shell
+The App Shell must handle:
 
-### Partner (Local)
-- username/password form
-- backend issues token
-- portal calls backend access profile
-- portal loads shell
+| Backend Response | UI Behavior |
+|-----------------|-------------|
+| 401 | Redirect to login |
+| 403 | Show “Not Authorized” |
+| 200 + empty list | Show empty state |
+| Network error | Show retry/error page |
 
-Both flows must converge after token acquisition.
+RLS “no rows” is not an error.
 
 ---
 
-## 13. Minimal Screens Required in Phase 1
+## 12. Non-Negotiable Rules
 
-- Login page:
-  - Entra login button
-  - Partner login form
-- Tenant selection:
-  - not needed in Phase 1 if user belongs to exactly one tenant
-- Portal shell:
-  - sidebar + placeholders
-- Not authorized page
-- Error page
-- Loading states
+❌ App Shell must not trust UI-only checks  
+❌ App Shell must not infer permissions from roles  
+❌ App Shell must not hardcode admin behavior  
+❌ Experiences must not bypass guards  
+❌ Multiple shells must not exist  
+
+✅ Single shell, multiple experiences  
+✅ Single access profile  
+✅ Backend + DB remain authoritative  
 
 ---
 
-## 14. Future Readiness (Phase 2+)
+## 13. Evolution Path (Future-Proof)
 
 This architecture supports:
-- adding mobile client using same APIs
-- adding GraphQL later for reporting (optional)
+- adding new experiences without re-auth
+- mobile apps using the same access profile
+- micro-frontend splitting later
 - advanced dashboards
-- dynamic menus per module
-- deep linking from notifications
+
+Because:
+- security is centralized
+- experiences are isolated
+- contracts are explicit
 
 ---
 
-## 15. Non-Negotiable Rules
+## 14. Relationship to Other Documents
 
-❌ No UI-only permission logic  
-❌ No hidden admin shortcuts in UI  
-❌ No direct DB queries  
-❌ No mixing WebHost and Portal projects  
-✅ UI access profile is mandatory  
-✅ Routes are guarded centrally  
-✅ Read vs Write semantics enforced consistently
+This document builds on:
+- `security-overview.md`
+- `authentication.md`
+- `authorization.md`
+- `ui-access-control.md`
+
+Next documents:
+- `access-profile-contract.md`
+- `route-map.md`
+- `experience-boundaries.md`
 
 ---
 
-## 16. Status
+## 15. Status
 
-- Phase: 1 (Portal Skeleton)
+- Phase: 1 (Foundation)
 - Scope: Shell + routing + access control
-- Business screens: later
+- Business screens: Not yet implemented
 - Stability: Locked
