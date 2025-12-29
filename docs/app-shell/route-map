@@ -1,0 +1,362 @@
+# App Shell Route Map (Phase 1)
+IMPACT HUB ERP — Phase 1
+
+## 1. Purpose
+
+This document defines the **complete route map** for the App Shell in Phase 1.
+
+It exists so the UI team can scaffold:
+- routes
+- placeholders
+- sidebar navigation
+- route guards (feature + permission)
+
+without asking questions or improvising security.
+
+This is a **skeleton route map**:
+- routes exist
+- screens may be placeholders
+- permissions are enforced from day 1
+
+---
+
+## 2. Concepts
+
+### 2.1 Route Guard Rules (Mandatory)
+
+Every route is guarded by two gates:
+
+1) **Feature Gate** (Tenant-level)
+- The tenant must have the module enabled.
+
+2) **Permission Gate** (User-level)
+- The user must have the required permission.
+
+If either fails:
+- route is not accessible
+- user is redirected to Not Authorized
+
+### 2.2 Read vs Write Semantics
+
+- `*.Read` → allows list/detail views
+- `*.Write` → allows create/edit/delete UIs
+- approval workflows use dedicated permissions:
+  - `*.Approve`, `*.Post`, etc.
+
+### 2.3 Experiences
+
+All routes are hosted in the **single App Shell** but may belong to different **experiences**:
+
+- `admin` (internal staff)
+- `partner` (external partners)
+- `donor` (donors/public)
+- `executive` (top management)
+
+In Phase 1, **we scaffold all routes**, but only implement a minimal subset as placeholders.
+
+---
+
+## 3. Global Routes (Shell-Level)
+
+| Route | Screen | Experience | Feature | Permission |
+|------|--------|------------|---------|------------|
+| `/` | Redirect to default home | all | none | none |
+| `/login` | Login selector (Entra + Local) | all | none | none |
+| `/logout` | Logout | all | none | none |
+| `/not-authorized` | Not Authorized page | all | none | none |
+| `/error` | Error page | all | none | none |
+| `/me` | Profile & session info | all | none | Authenticated |
+
+> Note: `/me` is not a business module; it shows user + tenant summary and can be read-only.
+
+---
+
+## 4. Admin Experience Routes (Internal Operations)
+
+### 4.1 Admin Home
+| Route | Screen | Feature | Permission |
+|------|--------|---------|------------|
+| `/admin` | Admin landing/dashboard (placeholder) | AdminShell | Admin.Read |
+
+> `AdminShell` is a conceptual feature flag. If you do not want a feature flag for this, treat it as always enabled for the main tenant.
+
+---
+
+## 5. Modules Route Map (15 Core Modules + Shared)
+
+> Modules are shown in sidebar only if:
+- Feature enabled AND
+- user has at least one permission in that module
+
+Each module includes standard routes:
+- list
+- details
+- create
+- edit
+
+---
+
+## 5.1 Strategic Planning (Module: StrategicPlanning)
+**Feature:** `StrategicPlanning`
+
+| Route | Screen | Permission |
+|------|--------|------------|
+| `/strategic-planning` | Module home (placeholder) | StrategicPlanning.Read |
+| `/strategic-planning/plans` | Plans list | StrategicPlanning.Read |
+| `/strategic-planning/plans/:id` | Plan details | StrategicPlanning.Read |
+| `/strategic-planning/plans/new` | Create plan | StrategicPlanning.Write |
+| `/strategic-planning/plans/:id/edit` | Edit plan | StrategicPlanning.Write |
+| `/strategic-planning/goals` | Goals list | StrategicPlanning.Read |
+| `/strategic-planning/goals/:id` | Goal details | StrategicPlanning.Read |
+| `/strategic-planning/goals/new` | Create goal | StrategicPlanning.Write |
+| `/strategic-planning/goals/:id/edit` | Edit goal | StrategicPlanning.Write |
+
+---
+
+## 5.2 Donors Management (Module: Donors)
+**Feature:** `Donors`
+
+| Route | Screen | Permission |
+|------|--------|------------|
+| `/donors` | Module home (placeholder) | Donors.Read |
+| `/donors/list` | Donors list | Donors.Read |
+| `/donors/:id` | Donor details | Donors.Read |
+| `/donors/new` | Create donor | Donors.Write |
+| `/donors/:id/edit` | Edit donor | Donors.Write |
+
+---
+
+## 5.3 Projects Management (Module: Projects)
+**Feature:** `Projects`
+
+| Route | Screen | Permission |
+|------|--------|------------|
+| `/projects` | Module home (placeholder) | Projects.Read |
+| `/projects/list` | Projects list | Projects.Read |
+| `/projects/:id` | Project details | Projects.Read |
+| `/projects/new` | Create project | Projects.Write |
+| `/projects/:id/edit` | Edit project | Projects.Write |
+
+---
+
+## 5.4 Sponsorships Management (Module: Sponsorships)
+**Feature:** `Sponsorships`
+
+| Route | Screen | Permission |
+|------|--------|------------|
+| `/sponsorships` | Module home (placeholder) | Sponsorships.Read |
+| `/sponsorships/list` | Sponsorships list | Sponsorships.Read |
+| `/sponsorships/:id` | Sponsorship details | Sponsorships.Read |
+| `/sponsorships/new` | Create sponsorship | Sponsorships.Write |
+| `/sponsorships/:id/edit` | Edit sponsorship | Sponsorships.Write |
+
+---
+
+## 5.5 Donations Management (Module: Donations)
+**Feature:** `Donations`
+
+| Route | Screen | Permission |
+|------|--------|------------|
+| `/donations` | Module home (placeholder) | Donations.Read |
+| `/donations/list` | Donations list | Donations.Read |
+| `/donations/:id` | Donation details | Donations.Read |
+| `/donations/new` | Create donation | Donations.Write |
+| `/donations/:id/edit` | Edit donation | Donations.Write |
+| `/donations/:id/approve` | Approve donation (placeholder) | Donations.Approve |
+
+---
+
+## 5.6 Money Transfer Management (Module: MoneyTransfer)
+**Feature:** `MoneyTransfer`
+
+| Route | Screen | Permission |
+|------|--------|------------|
+| `/money-transfer` | Module home (placeholder) | MoneyTransfer.Read |
+| `/money-transfer/list` | Transfers list | MoneyTransfer.Read |
+| `/money-transfer/:id` | Transfer details | MoneyTransfer.Read |
+| `/money-transfer/new` | Create transfer | MoneyTransfer.Write |
+| `/money-transfer/:id/edit` | Edit transfer | MoneyTransfer.Write |
+| `/money-transfer/:id/approve` | Approve transfer (placeholder) | MoneyTransfer.Approve |
+
+---
+
+## 5.7 Partners Management (Module: Partners)
+**Feature:** `Partners`
+
+| Route | Screen | Permission |
+|------|--------|------------|
+| `/partners` | Module home (placeholder) | Partners.Read |
+| `/partners/list` | Partners list | Partners.Read |
+| `/partners/:id` | Partner details | Partners.Read |
+| `/partners/new` | Create partner | Partners.Write |
+| `/partners/:id/edit` | Edit partner | Partners.Write |
+
+---
+
+## 5.8 CRM Management (Module: CRM)
+**Feature:** `CRM`
+
+| Route | Screen | Permission |
+|------|--------|------------|
+| `/crm` | Module home (placeholder) | CRM.Read |
+| `/crm/contacts` | Contacts list | CRM.Read |
+| `/crm/contacts/:id` | Contact details | CRM.Read |
+| `/crm/contacts/new` | Create contact | CRM.Write |
+| `/crm/contacts/:id/edit` | Edit contact | CRM.Write |
+
+---
+
+## 5.9 Marketing & Omnichannels (Module: Marketing)
+**Feature:** `Marketing`
+
+| Route | Screen | Permission |
+|------|--------|------------|
+| `/marketing` | Module home (placeholder) | Marketing.Read |
+| `/marketing/campaigns` | Campaigns list | Marketing.Read |
+| `/marketing/campaigns/:id` | Campaign details | Marketing.Read |
+| `/marketing/campaigns/new` | Create campaign | Marketing.Write |
+| `/marketing/campaigns/:id/edit` | Edit campaign | Marketing.Write |
+
+---
+
+## 5.10 Impact Measurement (Module: Impact)
+**Feature:** `ImpactMeasurement`
+
+| Route | Screen | Permission |
+|------|--------|------------|
+| `/impact` | Module home (placeholder) | Impact.Read |
+| `/impact/metrics` | Metrics list | Impact.Read |
+| `/impact/metrics/:id` | Metric details | Impact.Read |
+| `/impact/metrics/new` | Create metric | Impact.Write |
+| `/impact/metrics/:id/edit` | Edit metric | Impact.Write |
+| `/impact/dashboards` | Dashboards (placeholder) | Impact.Read |
+
+---
+
+## 5.11 Website (Module: Website)
+**Feature:** `Website`
+
+| Route | Screen | Permission |
+|------|--------|------------|
+| `/website` | Module home (placeholder) | Website.Read |
+| `/website/pages` | Pages list | Website.Read |
+| `/website/pages/:id` | Page details | Website.Read |
+| `/website/pages/new` | Create page | Website.Write |
+| `/website/pages/:id/edit` | Edit page | Website.Write |
+
+---
+
+## 5.12 Offline Branches Management (Module: Branches)
+**Feature:** `Branches`
+
+| Route | Screen | Permission |
+|------|--------|------------|
+| `/branches` | Module home (placeholder) | Branches.Read |
+| `/branches/list` | Branches list | Branches.Read |
+| `/branches/:id` | Branch details | Branches.Read |
+| `/branches/new` | Create branch | Branches.Write |
+| `/branches/:id/edit` | Edit branch | Branches.Write |
+
+---
+
+## 5.13 Monthly Bank Deductions (Module: BankDeductions)
+**Feature:** `BankDeductions`
+
+| Route | Screen | Permission |
+|------|--------|------------|
+| `/bank-deductions` | Module home (placeholder) | BankDeductions.Read |
+| `/bank-deductions/imports` | Imports list | BankDeductions.Read |
+| `/bank-deductions/imports/:id` | Import details | BankDeductions.Read |
+| `/bank-deductions/imports/new` | Upload/import file | BankDeductions.Write |
+| `/bank-deductions/assignments` | Assignments list | BankDeductions.Read |
+| `/bank-deductions/assignments/:id` | Assignment details | BankDeductions.Read |
+| `/bank-deductions/assignments/:id/post` | Post assignment (placeholder) | BankDeductions.Post |
+
+---
+
+## 5.14 Shared Services (Cross-cutting)
+**Feature:** `SharedServices` (optional feature flag)
+
+Shared services are not a module the user navigates to necessarily, but some screens may exist:
+
+| Route | Screen | Permission |
+|------|--------|------------|
+| `/settings` | Settings home (placeholder) | Settings.Read |
+| `/settings/tenants` | Tenant settings (internal only) | Tenants.Admin |
+| `/settings/users` | Users admin | Users.Admin |
+| `/settings/roles` | Roles admin | Roles.Admin |
+| `/settings/permissions` | Permissions view | Permissions.Read |
+| `/settings/audit` | Audit logs | Audit.Read |
+
+> These permissions are platform-level. In Phase 1, only Admin experience should expose them.
+
+---
+
+## 6. Partner Experience Routes (External Partners)
+
+Partner experience is a filtered view. Partners typically should not see internal admin settings.
+
+### Base
+| Route | Screen | Feature | Permission |
+|------|--------|---------|------------|
+| `/partner` | Partner landing (placeholder) | PartnerExperience | Partner.Read |
+
+Partners may be allowed to interact with specific modules (example):
+- Projects (limited)
+- Reporting (limited)
+
+Actual partner permissions are controlled by the backend permission model.
+
+---
+
+## 7. Donor Experience Routes (Future-facing skeleton)
+
+| Route | Screen | Feature | Permission |
+|------|--------|---------|------------|
+| `/donor` | Donor landing (placeholder) | DonorExperience | Donor.Read |
+| `/donor/donations` | Donor donations list | DonorExperience | Donor.Donations.Read |
+| `/donor/donations/new` | New donation | DonorExperience | Donor.Donations.Write |
+
+> Donor experience is likely separate authentication model later; in Phase 1 these are placeholders.
+
+---
+
+## 8. Executive Experience Routes (Top Management)
+
+| Route | Screen | Feature | Permission |
+|------|--------|---------|------------|
+| `/executive` | Executive landing (placeholder) | ExecutiveExperience | Executive.Read |
+| `/executive/portfolio` | Portfolio dashboard | ExecutiveExperience | Executive.Read |
+| `/executive/impact` | Impact dashboards | ExecutiveExperience | Executive.Read |
+| `/executive/finance` | Finance dashboards | ExecutiveExperience | Executive.Read |
+
+---
+
+## 9. Notes for Implementation Team
+
+### 9.1 Feature Names
+Feature names used here must match:
+- tenant enabled features in access profile
+- backend feature subscription tables (if enabled)
+
+### 9.2 Permission Names
+Permission strings used here are **contracts**.
+Backend must provide them in access profile.
+
+### 9.3 Phase 1 Minimal Build
+In Phase 1, implement only:
+- login routes
+- app shell
+- access profile loading
+- route guards
+- placeholders for module pages
+
+---
+
+## 10. Status
+
+- Phase: 1 (Skeleton)
+- Routes: Defined
+- Screens: Placeholder except login/shell
+- Stability: Locked
+- Changes require architectural review
