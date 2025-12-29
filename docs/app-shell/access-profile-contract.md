@@ -1,4 +1,4 @@
-##App Shell Access Profile Contract
+# App Shell Access Profile Contract
 
 IMPACT HUB ERP — Phase 1
 
@@ -20,7 +20,7 @@ avoid repeated permission calls
 
 This document is standalone and assumes no prior documentation.
 
-2. Why an Access Profile Exists
+# 2. Why an Access Profile Exists
 
 Without an access profile, UI teams typically:
 
@@ -46,7 +46,7 @@ The App Shell must build the entire UI from one backend response.
 
 That response is the Access Profile.
 
-3. Access Profile Lifecycle
+# 3. Access Profile Lifecycle
 When it is fetched
 
 Immediately after successful authentication
@@ -69,7 +69,7 @@ Token expiration
 
 Explicit logout
 
-4. Endpoint Definition
+# 4. Endpoint Definition
 Method
 GET
 
@@ -91,7 +91,7 @@ HTTP	Meaning
 200	Access profile returned
 401	Not authenticated / token invalid
 403	User inactive or tenant inactive
-5. High-Level Structure
+# 5. High-Level Structure
 
 The Access Profile contains four top-level sections:
 
@@ -108,7 +108,7 @@ The Access Profile contains four top-level sections:
 
 Each section has a clear responsibility.
 
-6. Contract Versioning
+# 6. Contract Versioning
 contractVersion
 
 Semantic version (e.g. "1.0")
@@ -123,7 +123,7 @@ Rule
 
 The App Shell must fail gracefully if it receives an unknown major version.
 
-7. Tenant Section
+# 7. Tenant Section
 Purpose
 
 Defines tenant-level context and feature availability.
@@ -181,7 +181,7 @@ flags expose explicit privileges, not permissions
 
 UI must not derive permissions from flags
 
-9. Permissions Section (Core)
+# 9. Permissions Section (Core)
 Purpose
 
 Defines what the user is allowed to do.
@@ -212,7 +212,7 @@ UI must never check roles
 
 Permission strings are contracts
 
-10. Read vs Write Semantics
+# 10. Read vs Write Semantics
 
 The UI interprets permissions using strict semantics:
 
@@ -224,7 +224,7 @@ Permission	UI Effect
 
 Write is never implied by Read.
 
-11. uiCapabilities Section (Optional but Recommended)
+# 11. uiCapabilities Section (Optional but Recommended)
 Purpose
 
 Provide precomputed booleans to simplify UI logic.
@@ -251,7 +251,7 @@ Backend-generated
 
 UI treats this as a convenience, not authority
 
-12. Building the UI from the Access Profile
+# 12. Building the UI from the Access Profile
 Sidebar
 
 A module appears if:
@@ -274,7 +274,7 @@ Shown/enabled if:
 
 corresponding permission exists
 
-13. Failure & Edge Cases
+# 13. Failure & Edge Cases
 RLS Returns Zero Rows
 
 UI must show empty state
@@ -297,7 +297,7 @@ Backend returns 403
 
 UI shows access denied page
 
-14. Security Guarantees
+# 14. Security Guarantees
 
 The Access Profile:
 
@@ -315,7 +315,7 @@ UI must assume:
 
 “Even if I show it, backend may still deny.”
 
-15. Anti-Patterns (DO NOT DO)
+# 15. Anti-Patterns (DO NOT DO)
 
 ❌ UI infers permissions from roles
 ❌ UI hardcodes admin behavior
@@ -323,7 +323,7 @@ UI must assume:
 ❌ UI caches permissions indefinitely
 ❌ UI builds menus without feature checks
 
-16. Relationship to Other Documents
+# 16. Relationship to Other Documents
 
 This document depends on:
 
@@ -341,7 +341,7 @@ route-map.md
 
 experience-boundaries.md
 
-17. Status
+# 17. Status
 
 Phase: 1 (Foundation)
 
