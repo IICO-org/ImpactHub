@@ -5,7 +5,7 @@
 **Date:** December 30, 2025  
 **Author:** Grok (Software Architect & Senior .NET Fullstack Developer)  
 **Location:** `/docs/architecture/ddd-and-event-driven.md`  
-(or as a new ADR in `/docs/architecture/ADR/`)
+
 
 ---
 
@@ -123,6 +123,13 @@ To keep modules loosely coupled:
 - **Preferred:** Domain Events raised inside a module
 - **Cross-Module:** Integration Events published to an in-process bus
 - **Avoid:** Direct cross-module method calls
+- **Primary mechanism: Publish events when significant state changes occur.
+- **No direct cross-module service calls (except rare synchronous cases approved via ADR).
+- **Integration via Integration Events published to an in-process bus.
+
+4.2 Why In-Process?
+
+We are a monolith → high performance, simple transactions, single deployment.
 
 ### Why In-Process?
 
@@ -131,7 +138,50 @@ To keep modules loosely coupled:
 - High performance
 - Simple transactions
 - Easy deployment
+We are a monolith → high performance, simple transactions, single deployment.
+Tool: MediatR (INotification & INotificationHandler) — lightweight, no external broker needed.
 
+4.3 Event Types
+| Type              | Scope                | Example                           | Visibility                                                                 |
+|-------------------|----------------------|-----------------------------------|-----------------------------------------------------------------------------|
+| **Domain Event**      | Internal to module     | `ProjectStatusChangedDomainEvent` | Private to module                                                           |
+| **Integration Event** | Cross-module contract | `ProjectApprovedIntegrationEvent` | Public contract (in module’s `.Contracts` project or `SharedKernel` if primitive) |
+### 4.4 Publishing Flow
+
+1. **Aggregate Root raises event**  
+   
+   AddDomainEvent(new ProjectApprovedIntegrationEvent(...));
+
+    Unit of Work publishes events
+    After SaveChangesAsync, all pending domain and integration events are published via MediatR.
+
+    Event Handlers react
+    Handlers in the same module or other modules process the event asynchronously.
+
+4.5 Consistency Model
+
+    Transactional consistency
+    Guaranteed within a single module and aggregate.
+
+    Eventual consistency
+    Enforced across modules through integration events.
+
+Handler Requirements
+
+    Must be idempotent
+
+    Must support event versioning
+
+4.6 Future-Proofing
+
+If a module needs to scale independently:
+
+    Replace in-process MediatR with an out-of-process message broker
+    (e.g., MassTransit + RabbitMQ or Azure Service Bus)
+
+    Introduce the Outbox Pattern
+    to ensure reliable event publishing with minimal architectural changes
+    
 ### Tooling
 
 - **MediatR**
