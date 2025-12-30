@@ -1,104 +1,281 @@
-Domain-Driven Design (DDD) and Event-Driven Architecture in ImpactHub's Modular Monolith
-Document Status: Proposed Architecture Decision Record (ADR)
-Date: December 30, 2025
-Author: Grok (as Software Architect & Senior .NET Fullstack Developer)
-Location: Upload to /docs/architecture/ddd-and-event-driven.md (or as a new ADR in /docs/architecture/ADR/)
-This document formalizes our commitment to Domain-Driven Design (DDD) principles and an in-process event-driven approach within our modular monolith architecture. It builds on existing governance (e.g., architecture-policy.md, context-map.md, strict module boundaries, one schema per module, ID-only cross-references, DB-first with external schema management).
-We adopt these patterns to ensure long-term maintainability, clear domain boundaries, loose coupling between modules, and readiness for future evolution (e.g., extracting modules if needed).
-1. Why DDD in a Modular Monolith?
-Our ImpactHub ERP serves impact organizations with complex domains (Projects, Donors, Donations, Reporting, Beneficiaries, etc.—up to 14 modules). DDD helps manage this complexity by aligning code with business language and realities.
-Key Benefits (tailored to our project):
+# Domain-Driven Design (DDD) and Event-Driven Architecture  
+## in ImpactHub’s Modular Monolith
 
-Clear Boundaries: Each module becomes a Bounded Context – a self-contained area with its own Ubiquitous Language, models, and rules.
-Maintainability: Prevents "big ball of mud" by enforcing isolation (already in our policy: no cross-schema FKs, application-layer integrity).
-Team Ownership: Distributed teams can own modules end-to-end without conflicts.
-Scalability Path: Modules designed as Bounded Contexts can be extracted to microservices later with minimal rework.
-Business Focus: Domain logic stays in the Domain layer, not scattered in UI or infrastructure.
+**Document Status:** Proposed Architecture Decision Record (ADR)  
+**Date:** December 30, 2025  
+**Author:** Grok (Software Architect & Senior .NET Fullstack Developer)  
+**Location:** `/docs/architecture/ddd-and-event-driven.md`  
+(or as a new ADR in `/docs/architecture/ADR/`)
 
-We map Modules ↔ Bounded Contexts directly (as implied in context-map.md).
-2. Strategic DDD Patterns We Adopt
+---
 
-Bounded Contexts: One per module (e.g., Projects Context, Donors Context).
-Context Mapping: Document relationships in context-map.md (e.g., Upstream/Downstream, Conformist, Anti-Corruption Layer for integrations).
-Ubiquitous Language: Use business terms consistently within a context (e.g., "Project" means different things in Projects vs. Finance contexts – avoid shared entities).
-Core Domain: Prioritize impact-tracking modules (Projects, Outcomes, Metrics) as the competitive differentiator.
+## Overview
 
-No shared domain models across modules – aligns with our SharedKernel restriction (primitives only).
-3. Tactical DDD Patterns We Adopt
-Within each module (Vertical Slice or Layered structure): 
-Pattern,Description,Implementation Guidelines
-Entities,"Objects with identity and lifecycle (e.g., Project with ProjectId).",Immutable where possible; use private setters.
-Value Objects,"Immutable objects without identity (e.g., Money, Address).",Encapsulate validation; override equality.
-Aggregates,"Cluster of entities/value objects with a root (e.g., Project Aggregate Root).",Enforce invariants here; transactional consistency boundary.
-Domain Services,"Operations not fitting in entities (e.g., calculating impact score).",Stateless; inject repositories if needed.
-Application Services,Orchestrate use cases (CQRS commands/queries).,Thin; use MediatR handlers.
-Repositories,"Abstract persistence (interface in Domain/Application, impl in Infrastructure).",Per aggregate; DB-first mapping with EF Core (mapping-only).
+This document formalizes our commitment to **Domain-Driven Design (DDD)** principles and an **in-process event-driven architecture** within ImpactHub’s **modular monolith**.
 
-We use CQRS lightly: Separate commands (state-changing) and queries via MediatR.
+It builds on existing governance artifacts:
 
-4. Event-Driven Architecture: In-Process Domain Events
-To achieve loose coupling between modules without direct calls (which would tighten dependencies):
+- `architecture-policy.md`
+- `context-map.md`
+- Strict module boundaries
+- One schema per module
+- ID-only cross-references
+- No cross-schema foreign keys
+- DB-first approach with external schema management
 
-Preferred Communication: Publish Domain Events within a module when significant state changes occur.
-Cross-Module Integration: Use Integration Events (published to an in-process bus) for other modules to react asynchronously.
-Why In-Process?: We're a monolith – no need for distributed brokers initially. Keeps performance high, transactions simple, and deployment easy.
-Tool: MediatR for in-process Publish/Subscribe (INotification & INotificationHandler).
-Simple, lightweight, no external dependencies.
-Handles both domain events (internal to module) and integration events (subscribed by other modules).
+These patterns ensure:
 
+- Long-term maintainability
+- Clear domain boundaries
+- Loose coupling between modules
+- Readiness for future evolution (e.g., extracting modules if needed)
 
-Event Types:
+---
 
-Domain Events: Internal to a Bounded Context (e.g., ProjectCreatedDomainEvent – handled within Projects module for side effects like auditing).
-Integration Events: Public contract for cross-context (e.g., ProjectApprovedIntegrationEvent – subscribed by Donors or Reporting modules).
+## 1. Why DDD in a Modular Monolith?
 
-Publishing Flow:
+ImpactHub ERP serves impact organizations with **complex domains**:
 
-In aggregate root or domain service: Raise event (e.g., AddDomainEvent(new ProjectApprovedIntegrationEvent(...))).
-In Unit of Work (after SaveChanges): Publish all events via MediatR.
-Handlers react (update read models, trigger workflows, enforce eventual consistency).
+- Projects  
+- Donors  
+- Donations  
+- Reporting  
+- Beneficiaries  
+- …up to 14 modules
 
-Eventual Consistency: Cross-module changes are eventual (no distributed transactions needed in monolith).
-Idempotency & Ordering: Handlers must be idempotent; use event versioning.
-Future-Proofing: If a module scales out, switch to out-of-process bus (MassTransit + RabbitMQ/Azure Service Bus) with minimal changes (wrap MediatR or add Outbox pattern).
+DDD helps manage this complexity by aligning the codebase with **business language and real-world processes**.
+
+### Key Benefits (Tailored to ImpactHub)
+
+- **Clear Boundaries**  
+  Each module is a *Bounded Context* with its own Ubiquitous Language, models, and rules.
+
+- **Maintainability**  
+  Prevents a “big ball of mud” by enforcing isolation  
+  (already aligned with our policy: no cross-schema FKs, application-layer integrity).
+
+- **Team Ownership**  
+  Teams can own modules end-to-end without coordination overhead.
+
+- **Scalability Path**  
+  Modules designed as Bounded Contexts can later be extracted into microservices with minimal rework.
+
+- **Business Focus**  
+  Domain logic lives in the **Domain layer**, not scattered across UI or infrastructure.
+
+> We map **Modules ↔ Bounded Contexts** directly (as defined in `context-map.md`).
+
+---
+
+## 2. Strategic DDD Patterns We Adopt
+
+- **Bounded Contexts**  
+  One per module (e.g., *Projects Context*, *Donors Context*).
+
+- **Context Mapping**  
+  Relationships documented in `context-map.md`:
+  - Upstream / Downstream
+  - Conformist
+  - Anti-Corruption Layer (for integrations)
+
+- **Ubiquitous Language**  
+  Business terms are consistent *within* a context.  
+  Example:  
+  > “Project” may mean different things in *Projects* vs *Finance* contexts — no shared entities.
+
+- **Core Domain**  
+  Impact-tracking modules (*Projects, Outcomes, Metrics*) are treated as competitive differentiators.
+
+**Rule:**  
+No shared domain models across modules.  
+Shared Kernel is limited to primitives only.
+
+---
+
+## 3. Tactical DDD Patterns We Adopt
+
+Within each module (vertical slice or layered structure):
+
+| Pattern | Description | Implementation Guidelines |
+|------|-----------|---------------------------|
+| **Entities** | Objects with identity and lifecycle (e.g., `Project` with `ProjectId`) | Immutable where possible; private setters |
+| **Value Objects** | Immutable objects without identity (e.g., `Money`, `Address`) | Encapsulate validation; override equality |
+| **Aggregates** | Cluster of entities/value objects with a root | Enforce invariants here; transactional boundary |
+| **Domain Services** | Logic that doesn’t fit entities | Stateless; inject repositories if required |
+| **Application Services** | Orchestrate use cases (CQRS) | Thin; implemented as MediatR handlers |
+| **Repositories** | Abstract persistence | One per aggregate; DB-first EF Core mapping |
+
+### CQRS Usage
+
+- Applied **lightly**
+- Commands = state-changing  
+- Queries = read-only  
+- Implemented via **MediatR**
+
+---
+
+## 4. Event-Driven Architecture: In-Process Domain Events
+
+To keep modules loosely coupled:
+
+### Communication Strategy
+
+- **Preferred:** Domain Events raised inside a module
+- **Cross-Module:** Integration Events published to an in-process bus
+- **Avoid:** Direct cross-module method calls
+
+### Why In-Process?
+
+- We are a **monolith**
+- No distributed broker needed (yet)
+- High performance
+- Simple transactions
+- Easy deployment
+
+### Tooling
+
+- **MediatR**
+  - `INotification`
+  - `INotificationHandler`
+- Handles:
+  - Domain Events (internal)
+  - Integration Events (cross-module)
+
+---
+
+### Event Types
+
+- **Domain Events**  
+  Internal to a Bounded Context  
+  Example:  
+  `ProjectCreatedDomainEvent`  
+  Used for side effects like auditing.
+
+- **Integration Events**  
+  Public contract for other contexts  
+  Example:  
+  `ProjectApprovedIntegrationEvent`  
+  Consumed by Donors or Reporting modules.
+
+---
+
+### Publishing Flow
+
+1. **Aggregate Root / Domain Service**  
+   Raise event:
+   ```csharp
+   AddDomainEvent(new ProjectApprovedIntegrationEvent(...));
+
+    Unit of Work (after SaveChanges)
+    Publish events via MediatR.
+
+    Handlers React
+
+        Update read models
+
+        Trigger workflows
+
+        Enforce eventual consistency
+
+Architectural Guarantees
+
+    Eventual Consistency
+    No distributed transactions across modules.
+
+    Idempotency & Ordering
+    Event handlers must be idempotent.
+    Event versioning is required.
+
+    Future-Proofing
+    If scaling out:
+
+        Introduce Outbox Pattern
+
+        Replace in-process bus with:
+
+            MassTransit
+
+            RabbitMQ or Azure Service Bus
+            Minimal refactoring required.
+
 5. Enforcing the Rules
 
-No Direct Cross-Module Calls: Only via events or public APIs (if synchronous needed – rare, requires ADR approval).
-CI Checks: Extend existing architecture-check.yml to detect forbidden references.
-PR Review: Reject violations; require event-based integration.
-Exceptions: Document in ADR folder.
-6. Example: Projects Module Integration with Donors
-C#
-// In Projects Module (Domain)
+    No Direct Cross-Module Calls
+    Only events or explicitly approved public APIs.
+
+    CI Enforcement
+    Extend architecture-check.yml to detect violations.
+
+    PR Reviews
+    Violations are rejected.
+    Event-based integration is mandatory.
+
+    Exceptions
+    Must be documented as ADRs.
+
+6. Example: Projects Module → Donors Module
+Projects Module (Domain)
+
 public class Project : AggregateRoot
 {
     public void Approve()
     {
-        // ... business logic
-        AddDomainEvent(new ProjectApprovedIntegrationEvent(ProjectId, TenantId, ApprovedDate));
+        // business logic
+        AddDomainEvent(
+            new ProjectApprovedIntegrationEvent(
+                ProjectId,
+                TenantId,
+                ApprovedDate
+            )
+        );
     }
 }
 
-// Integration Event (in Projects.Contracts or SharedKernel if primitive)
-public record ProjectApprovedIntegrationEvent(Guid ProjectId, Guid TenantId, DateTime ApprovedDate) : INotification;
+Integration Event Contract
 
-// In Donors Module (Application Handler)
-public class ProjectApprovedHandler : INotificationHandler<ProjectApprovedIntegrationEvent>
+public record ProjectApprovedIntegrationEvent(
+    Guid ProjectId,
+    Guid TenantId,
+    DateTime ApprovedDate
+) : INotification;
+
+Donors Module (Application Handler)
+
+public class ProjectApprovedHandler 
+    : INotificationHandler<ProjectApprovedIntegrationEvent>
 {
-    public async Task Handle(ProjectApprovedIntegrationEvent @event, CancellationToken ct)
+    public async Task Handle(
+        ProjectApprovedIntegrationEvent @event,
+        CancellationToken ct)
     {
-        // React: e.g., notify potential donors, update statistics
-        // Eventual consistency – no transaction spanning modules
+        // React:
+        // - notify potential donors
+        // - update statistics
+        // eventual consistency, no shared transaction
     }
 }
 
 7. References & Inspirations
 
-Eric Evans: Domain-Driven Design ( foundational).
-Kamil Grzybek: Modular Monolith with DDD (GitHub example).
-Vaughn Vernon: Implementing Domain-Driven Design.
-Milan Jovanović & Mehmet Ozkaya: .NET Modular Monolith guides.
-MediatR documentation for in-process events.
+    Eric Evans — Domain-Driven Design
 
-This policy is binding – all new modules (starting with Projects in Phase 3) must follow it. Review annually or on major changes.
-Upload this as Markdown to the repo and link from ROADMAP.md and architecture-policy.md for visibility. Let me know if you'd like adjustments or code templates!
+    Kamil Grzybek — Modular Monolith with DDD
+
+    Vaughn Vernon — Implementing Domain-Driven Design
+
+    Milan Jovanović & Mehmet Ozkaya — .NET Modular Monolith Guides
+
+    MediatR Documentation — In-process messaging
+
+Policy Statement
+
+This policy is binding.
+
+    All new modules (starting with Projects in Phase 3) must comply.....
+
+
+
+
+        ROADMAP.md
+
+        architecture-policy.md
