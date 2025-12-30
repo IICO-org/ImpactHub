@@ -1,0 +1,17 @@
+Tying Third-Party Integrations and Shared Services into Phase 3 Module Rollout
+Based on the latest roadmap_phase2 file (last updated Dec 29, 2025), Phase 3 focuses on module-by-module delivery using a repeatable "module playbook" (as outlined in section F1). This starts with the Projects module (F2: vertical slices for List/Details/Create/Edit with RLS and permissions), then repeats for Donors/Donations (F3), and scales to the full 14 core modules. Each module follows a sequence: DDL review (external schema creation), RLS per table, permissions setup, API endpoints, and UI screens—ensuring end-to-end functionality (CRUD + enforcement).
+The ADR I proposed (third-party-integration-and-shared-services.md) integrates seamlessly here, enhancing maintainability without disrupting the modular boundaries. It provides abstractions for third-party tools (e.g., email via SendGrid) and structures shared services (e.g., audit trails, workflows), so modules like Projects can leverage them via interfaces/events rather than direct implementations. This aligns with our DDD (aggregates raising events) and event-driven patterns (MediatR handlers), keeping domain logic pure.
+How It Ties In: General Flow for Phase 3 Modules
+
+Module Playbook Extension: Update the playbook (from F1) to include shared service integration as a standard step. After setting up domain entities/aggregates and application services (e.g., MediatR commands for CreateProject), add event handlers that use shared abstractions. This ensures:
+No module-specific config (e.g., no SendGrid API keys in Projects code).
+Cross-cutting concerns (e.g., emailing on project approval) are handled via events, promoting loose coupling.
+
+Outsourcing/In-House Balance: For each module, reference the ADR's table to decide—e.g., outsource email (SendGrid) but build in-house workflows if custom to impact processes.
+Enforcement: During DDL review and PRs, CI checks (extending architecture-check.yml) verify no direct third-party references in module code.
+
+Example: Integrating Email in the Projects Module
+In Phase 3's F2 (Projects vertical slices), we'd implement email notifications (e.g., "Project Approved – Thank You" to stakeholders) using the ADR's Adapter Pattern. This fits naturally after basic CRUD:
+
+Domain Layer (Projects.Domain):
+Define the Aggregate Root with event raising (per DDD ADR).
