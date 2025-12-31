@@ -1,0 +1,26 @@
+# Visual Studio folders
+.vs/
+[Bb]in/
+[Oo]bj/
+out/
+
+# Exclude and Prevent Settings Files to avoid stealing passwords if exists there
+.env
+appsettings.Development.json
+
+# User-specific files
+*.user
+*.userosscache
+*.sln.docuser
+
+# SQL Server files
+*.mdf
+*.ldf
+*.ndf
+
+# Packages folder
+packages/
+
+# OS generated files
+.DS_Store
+Thumbs.db

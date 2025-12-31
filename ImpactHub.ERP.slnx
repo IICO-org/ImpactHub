@@ -1,0 +1,31 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Host/">
+    <Project Path="src/Host/ImpactHub.ERP.WebHost/ImpactHub.ERP.WebHost.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/" />
+  <Folder Name="/src/modules/CRM/" />
+  <Folder Name="/src/modules/Donors/" />
+  <Folder Name="/src/modules/Finance/" />
+  <Folder Name="/src/modules/Finance/Donations/" />
+  <Folder Name="/src/modules/Finance/Donations/Bank Pledges/" />
+  <Folder Name="/src/modules/Finance/Donations/Off-Branches/" />
+  <Folder Name="/src/modules/Finance/Donations/Website/" />
+  <Folder Name="/src/modules/Finance/Integration/" />
+  <Folder Name="/src/modules/IAM/">
+    <Project Path="src/Modules/IAM/Modules.IAM.Api/Modules.IAM.Api.csproj" />
+    <Project Path="src/Modules/IAM/Modules.IAM.Application/Modules.IAM.Application.csproj" />
+    <Project Path="src/Modules/IAM/Modules.IAM.Domain/Modules.IAM.Domain.csproj" />
+    <Project Path="src/Modules/IAM/Modules.IAM.Infrastructure/Modules.IAM.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/Program Managemnt/" />
+  <Folder Name="/src/modules/Program Managemnt/Kpis/" />
+  <Folder Name="/src/modules/Program Managemnt/Planning/">
+    <File Path="TextFile1.txt" />
+  </Folder>
+  <Folder Name="/src/modules/Program Managemnt/Projects/" />
+  <Folder Name="/src/modules/Program Managemnt/Sponsorships/" />
+  <Folder Name="/src/sharedkernel/">
+    <Project Path="src/SharedKernel/ImpactHub.SharedKernel/ImpactHub.SharedKernel.csproj" />
+  </Folder>
+</Solution>

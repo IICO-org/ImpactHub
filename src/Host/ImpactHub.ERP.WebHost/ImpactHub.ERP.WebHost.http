@@ -1,0 +1,6 @@
+@ImpactHub.ERP.WebHost_HostAddress = http://localhost:5167
+
+GET {{ImpactHub.ERP.WebHost_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
