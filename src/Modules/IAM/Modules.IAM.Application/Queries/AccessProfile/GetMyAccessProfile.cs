@@ -1,6 +1,7 @@
 ﻿namespace Modules.IAM.Application.Queries.AccessProfile;
 
-// ---- CONTRACT (what the App Shell consumes) ----
+// ---- CONTRACT (what the App Shell consumes) ---- 
+//--Access Profile Dto
 public sealed record AccessProfileDto(
     int UserId,
     Guid TenantId,

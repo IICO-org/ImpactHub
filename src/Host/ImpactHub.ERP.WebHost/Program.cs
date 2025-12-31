@@ -4,6 +4,7 @@ using Microsoft.Identity.Web;
 using Modules.IAM.Api.Debug;
 using Modules.IAM.Application;
 using Modules.IAM.Infrastructure;
+using ImpactHub.ERP.WebHost.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,7 +21,17 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
 
+
 builder.Services.AddAuthorization();
+// =====================
+// AUTHORIZATION (Permission enforcement)
+// =====================
+// We keep permission enforcement at the edge (WebHost) to avoid leaking ASP.NET concerns
+// into Application/Domain. Controllers can declare required permissions via attributes.
+// Implementation uses the IAM Access Profile (cached per TenantId+UserId).
+builder.Services.AddImpactHubAuthorization();
+
+
 
 // =====================
 // Per-request identity contexts (SharedKernel)

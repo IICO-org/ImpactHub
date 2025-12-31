@@ -1,4 +1,5 @@
 ﻿using ImpactHub.SharedKernel.Security;
+using Modules.IAM.Application.AccessProfile;
 
 namespace Modules.IAM.Application.Queries.AccessProfile;
 
@@ -6,11 +7,16 @@ public sealed class GetMyAccessProfileHandler
 {
     private readonly ICurrentUser _currentUser;
     private readonly RequestIdentityContext _requestIdentity;
+    private readonly IAccessProfileProvider _accessProfileProvider;
 
-    public GetMyAccessProfileHandler(ICurrentUser currentUser, RequestIdentityContext requestIdentity)
+    public GetMyAccessProfileHandler(
+        ICurrentUser currentUser,
+        RequestIdentityContext requestIdentity,
+        IAccessProfileProvider accessProfileProvider)
     {
         _currentUser = currentUser;
         _requestIdentity = requestIdentity;
+        _accessProfileProvider = accessProfileProvider;
     }
 
     public Task<AccessProfileDto> HandleAsync(
@@ -20,18 +26,13 @@ public sealed class GetMyAccessProfileHandler
         if (!_currentUser.IsResolved || _currentUser.UserId is null || _currentUser.TenantId is null)
             throw new UnauthorizedAccessException("Current user is not resolved.");
 
-        // Phase 1 of Access Profile: identity + empty lists.
-        // Next iteration will populate Roles/Permissions/Modules from IAM tables (cached).
-        var dto = new AccessProfileDto(
-            UserId: _currentUser.UserId.Value,
-            TenantId: _currentUser.TenantId.Value,
-            Provider: _requestIdentity.Provider ?? "entra",
-            Issuer: _requestIdentity.Issuer ?? "",
-            SubjectId: _requestIdentity.SubjectId ?? "",
-            Roles: Array.Empty<string>(),
-            Permissions: Array.Empty<string>(),
-            Modules: Array.Empty<string>());
-
-        return Task.FromResult(dto);
+        return _accessProfileProvider.GetAsync(
+            tenantId: _currentUser.TenantId.Value,
+            userId: _currentUser.UserId.Value,
+            provider: _requestIdentity.Provider ?? "entra",
+            issuer: _requestIdentity.Issuer,
+            subjectId: _requestIdentity.SubjectId ?? "",
+            ct: cancellationToken
+        );
     }
 }
