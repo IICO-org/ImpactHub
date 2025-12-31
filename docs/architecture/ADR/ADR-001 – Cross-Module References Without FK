@@ -1,0 +1,14 @@
+## ADR-001 – Cross-Module References Without FK
+
+## Status
+Accepted
+
+## Decision
+Cross-module relationships are implemented using ID references only.
+No physical FK constraints across schemas.
+
+## Rationale
+Preserves module autonomy and prevents lifecycle coupling.
+
+## Consequences
+Integrity is enforced in Application Layer.

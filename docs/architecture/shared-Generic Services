@@ -1,0 +1,80 @@
+## Structuring Shared/Generic Services
+
+### Problem Statement
+
+We have 14 core domain aggregates (bounded contexts/modules, e.g., Projects, Donors) that focus on business-specific logic. Additionally, there are cross-cutting "generic" domains/services that span the system:
+
+- In-app notifications  
+- Audit trails  
+- Email services (as above)  
+- Search  
+- Approval workflows  
+- Printing services  
+
+Some of these will be outsourced (third-party integrations), others developed in-house.
+
+---
+
+### Proposed Solution: Dedicated Shared Infrastructure Modules
+
+Treat shared services as separate modules or infrastructure layers to maintain boundaries while allowing reuse. This fits our modular monolith:
+
+- **Outsourced Services:** Handle via abstracted adapters (as in Section 1, e.g., email via SendGrid).
+- **In-House Developed Services:** Build as dedicated modules or shared infrastructure projects, integrated via interfaces/events.
+- **Placement:** Use `ImpactHub.Infrastructure` namespace for shared concerns, with sub-projects for each  
+  (e.g., `ImpactHub.Infrastructure.Audit`, `ImpactHub.Infrastructure.Workflows`).
+
+---
+
+### Categorization and Recommendations
+
+Group shared services by type and suggest outsourcing vs. in-house:
+
+| Service | Description | Recommendation | Integration Approach |
+|-------|-------------|----------------|----------------------|
+| Email Services | Notifications, campaigns (e.g., thank-you emails) | Outsource (SendGrid/MailGun) | Adapter Pattern (as above) |
+| In-App Notifications | Real-time alerts within the app (e.g., SignalR or push via Firebase) | Outsource (Firebase/Pusher) or In-House (SignalR) | Interface (`INotificationService`); event-driven triggers via MediatR |
+| Audit Trails | Logging changes to entities for compliance (who/what/when) | In-House (developed with modules) | EF Core interceptors or MediatR behaviors; store in shared Audit schema |
+| Search | Cross-module querying (e.g., Elasticsearch for full-text) | Outsource (Elastic Cloud) or In-House (EF Core + PostgreSQL full-text) | Interface (`ISearchService`); publish Integration Events to index updates |
+| Approval Workflows | Multi-step approvals (e.g., project funding) | In-House (developed as a module) | Dedicated Workflows module; use State Machine (Stateless) + MediatR events |
+| Printing Services | Generate PDFs/reports (e.g., donor receipts) | Outsource (PDFMonkey) or In-House (iText/DinkToPdf) | Interface (`IReportGenerator`); triggered via commands |
+
+---
+
+### Outsourcing vs. In-House Criteria
+
+- **Outsourcing Criteria:**  
+  Prefer for commodity features (e.g., email, search if complex) to save development time.  
+  Use adapters for all outsourced services.
+
+- **In-House Criteria:**  
+  Build for core/custom needs (e.g., audit trails tied to domain events, workflows specific to impact processes).  
+  Develop alongside the 14 modules in iterative phases.
+
+---
+
+### Architectural Guidelines
+
+- **Shared Infrastructure Project:**  
+  Create `ImpactHub.Infrastructure.Shared` for common abstractions/interfaces.
+
+- **Dedicated Modules for Complex Services:**  
+  Example: a *Workflows* module as a bounded context (own schema, `DbContext`) if approvals are domain-rich.
+
+- **Integration Patterns:**
+  - **Event-Driven:** Core modules publish Integration Events (e.g., `EntityUpdatedEvent`) that shared services subscribe to (via MediatR).
+  - **Synchronous Calls:** Rare; use interfaces injected via DI.
+
+- **Multi-Tenancy & Security:**  
+  All shared services must respect tenant isolation (e.g., via session context in DB queries).
+
+- **Testing & Governance:**  
+  Unit test interfaces; enforce no direct dependencies via CI.
+
+---
+
+This structure keeps the 14 core modules focused on domain logic while providing reusable, swappable shared services.
+
+**This ADR is binding; implement starting in Phase 3.**  
+Link from `ROADMAP.md` and `architecture-policy.md`.  
+If needed, refine with specific examples.

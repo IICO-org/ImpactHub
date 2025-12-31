@@ -1,0 +1,191 @@
+# Tying Third-Party Integrations and Shared Services into Phase 3 Module Rollout
+
+Based on the latest `roadmap_phase2` file (last updated Dec 29, 2025), Phase 3 focuses on module-by-module delivery using a repeatable **"module playbook"** (as outlined in section F1). This starts with the **Projects** module (F2: vertical slices for List/Details/Create/Edit with RLS and permissions), then repeats for **Donors/Donations** (F3), and scales to the full 14 core modules.
+
+Each module follows a sequence:
+
+- DDL review (external schema creation)
+- RLS per table
+- Permissions setup
+- API endpoints
+- UI screens  
+
+This ensures end-to-end functionality (CRUD + enforcement).
+
+The ADR I proposed (`third-party-integration-and-shared-services.md`) integrates seamlessly here, enhancing maintainability without disrupting the modular boundaries. It provides abstractions for third-party tools (e.g., email via SendGrid) and structures shared services (e.g., audit trails, workflows), so modules like Projects can leverage them via interfaces/events rather than direct implementations.
+
+This aligns with our DDD (aggregates raising events) and event-driven patterns (MediatR handlers), keeping domain logic pure.
+
+---
+
+## How It Ties In: General Flow for Phase 3 Modules
+
+### Module Playbook Extension
+
+Update the playbook (from F1) to include shared service integration as a standard step. After setting up domain entities/aggregates and application services (e.g., MediatR commands for `CreateProject`), add event handlers that use shared abstractions. This ensures:
+
+- No module-specific config (e.g., no SendGrid API keys in Projects code).
+- Cross-cutting concerns (e.g., emailing on project approval) are handled via events, promoting loose coupling.
+
+### Outsourcing / In-House Balance
+
+For each module, reference the ADR’s table to decide—for example:
+
+- Outsource email (SendGrid)
+- Build workflows in-house if custom to impact processes
+
+### Enforcement
+
+During DDL review and PRs, CI checks (extending `architecture-check.yml`) verify no direct third-party references in module code.
+
+---
+
+## Example: Integrating Email in the Projects Module
+
+In Phase 3’s F2 (Projects vertical slices), we implement email notifications (e.g., **"Project Approved – Thank You"** to stakeholders) using the ADR’s Adapter Pattern. This fits naturally after basic CRUD.
+
+---
+
+### 1. Domain Layer (Projects.Domain)
+
+Define the Aggregate Root with event raising (per DDD ADR).
+
+```csharp
+// Projects.Domain/Entities/Project.cs
+public class Project : AggregateRoot<Guid>
+{
+    // ... properties like Name, Status, TenantId
+
+    public void Approve(Guid approverId)
+    {
+        if (Status != ProjectStatus.Pending) throw new InvalidOperationException();
+        Status = ProjectStatus.Approved;
+        ApprovedBy = approverId;
+        ApprovedOn = DateTime.UtcNow;
+
+        // Raise integration event for cross-module reactions (e.g., email)
+        AddDomainEvent(
+            new ProjectApprovedIntegrationEvent(
+                Id,
+                TenantId,
+                ApprovedOn,
+                Stakeholders)); // Stakeholders could be a list of emails/IDs
+    }
+}
+
+2. Application Layer (Projects.Application)
+
+Use MediatR to handle the command and publish events (eventual consistency).
+// Projects.Application/Commands/ApproveProjectCommandHandler.cs
+public class ApproveProjectCommandHandler : IRequestHandler<ApproveProjectCommand>
+{
+    private readonly IProjectRepository _repository;
+    private readonly IMediator _mediator; // For publishing events
+
+    public ApproveProjectCommandHandler(
+        IProjectRepository repository,
+        IMediator mediator)
+    {
+        _repository = repository;
+        _mediator = mediator;
+    }
+
+    public async Task Handle(
+        ApproveProjectCommand request,
+        CancellationToken ct)
+    {
+        var project = await _repository.GetByIdAsync(request.ProjectId);
+        project.Approve(request.ApproverId);
+        await _repository.SaveChangesAsync(); // Publishes pending events via Unit of Work
+    }
+}
+
+3. Event Handler (Using Shared Email Service)
+
+In Projects.Application or a dedicated handlers folder, subscribe to the event and inject the abstracted IEmailService (from ADR Section 1).
+// Projects.Application/Handlers/ProjectApprovedHandler.cs
+public class ProjectApprovedHandler
+    : INotificationHandler<ProjectApprovedIntegrationEvent>
+{
+    private readonly IEmailService _emailService; // Abstracted interface
+
+    public ProjectApprovedHandler(IEmailService emailService)
+    {
+        _emailService = emailService;
+    }
+
+    public async Task Handle(
+        ProjectApprovedIntegrationEvent @event,
+        CancellationToken ct)
+    {
+        // Send thank-you email to stakeholders
+        foreach (var stakeholder in @event.Stakeholders)
+        {
+            await _emailService.SendNotificationAsync(
+                stakeholder.Email,
+                "Project Approved – Thank You!",
+                $"The project {@event.ProjectId} was approved on {@event.ApprovedOn}. Thank you for your support!"
+            );
+        }
+    }
+}
+
+4. Infrastructure / Repository Layer (Projects.Infrastructure)
+
+DB-first approach:
+
+External SQL for schema (e.g., Projects table with RLS predicate on TenantId)
+
+EF Core DbContext for mapping only (no migrations)
+
+// Projects.Infrastructure/ProjectsDbContext.cs
+public class ProjectsDbContext : DbContext
+{
+    public DbSet<Project> Projects { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Mapping only – no FKs to other schemas
+        modelBuilder.Entity<Project>()
+            .ToTable("Projects", "projects");
+
+        // RLS applied externally via SQL
+    }
+}
+
+5. UI Integration (App Shell + Module Screens)
+
+In /app-shell, add Projects routes (placeholders from Phase 2 D7 become real screens).
+
+React components call the API (e.g., /api/projects/approve/{id}), which triggers the backend flow.
+
+Permissions guard the Approve button via access-profile (Phase 2 C7).
+
+No email logic in the frontend—handled backend-side for security.
+Tying in Other Shared Services
+
+Audit Trails (in-house):
+Automatically log via MediatR pipeline behavior or EF interceptor on SaveChanges
+(shared in ImpactHub.Infrastructure.Audit).
+
+Approval Workflows (in-house):
+If approval is multi-step, use the dedicated Workflows module (ADR recommendation) to orchestrate—e.g., publish a WorkflowStartedEvent.
+
+Search:
+On project creation, publish an event to index in Elasticsearch (outsourced via ISearchService).
+Benefits for Rollout
+
+Speed & Consistency:
+Developers follow the playbook + ADR templates—e.g., copy the event handler pattern for Donors (F3: notify on donation receipt).
+
+Scalability:
+As we add the 14 modules, shared services scale without duplication
+(e.g., one IEmailService registration in Program.cs).
+
+Testing:
+Mock interfaces in module tests; end-to-end smoke tests (extending Phase 2 C8) verify email sending without real SendGrid calls.
+
+Switching Providers:
+If we swap SendGrid for MailGun mid-Phase 3, only update the adapter—no changes to Projects or other modules.
+
+This keeps Phase 3 iterative and focused: deliver Projects fully (end-to-end with email), then repeat.

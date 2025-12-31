@@ -1,0 +1,12 @@
+ADR-003 – Modular Monolith Over Microservices
+## Status
+Accepted
+
+## Decision
+Adopt Modular Monolith architecture.
+
+## Rationale
+Lower operational complexity, strong governance.
+
+## Consequences
+Strict internal boundaries are mandatory.

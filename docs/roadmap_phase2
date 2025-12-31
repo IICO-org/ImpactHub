@@ -1,0 +1,84 @@
+# IMPACT HUB ERP — Phase 2 Roadmap (Backend + App Shell + Module Delivery)
+
+## Legend
+- **Output** = the concrete artifact we must have at the end of the step
+- **Done when** = objective verification (no opinions)
+- **Depends on** = must be completed earlier
+
+---
+
+## A) Repository & Solution Baseline (Modular Monolith)
+
+| Step ID | Scope | Goal | Output | Done when | Depends on |
+|---|---|---|---|---|---|
+| A1 | VS Solution | Create solution + WebHost | `ImpactHub.ERP.sln` + `ImpactHub.ERP.WebHost` | WebHost runs, template cleaned | — |
+| A2 | VS Structure | Create solution folders | Solution folders: `src`, `modules`, `sharedkernel` | Folders visible in Solution Explorer | A1 |
+| A3 | Shared | Add SharedKernel library | `ImpactHub.SharedKernel` project | Builds, Class1 removed | A2 |
+| A4 | IAM Module | Add 4 IAM projects | `Modules.IAM.{Domain,Application,Infrastructure,Api}` | Builds in solution | A2 |
+| A5 | References | Wire references correctly | Project references set | Solution builds green | A4 |
+| A6 | Disk Layout | Physical repo layout matches architecture | `/src/Host`, `/src/SharedKernel`, `/src/Modules/IAM`, `/docs`, `/app-shell`, `/tests` | Projects open with no “not found” | A5 |
+| A7 | Naming | Normalize project naming | All IAM projects start with `Modules.IAM.*` | No mixed prefixes remain | A6 |
+
+---
+
+## B) Security Schema Baseline (DB) — Already Validated
+
+| Step ID | Scope | Goal | Output | Done when | Depends on |
+|---|---|---|---|---|---|
+| B1 | Identity | Single principal model | `iam.Users`, `iam.UserIdentities`, `iam.UserAuth` | No PartnerUsers table; identities in UserIdentities | — |
+| B2 | RBAC | Single authoritative role assignment | `iam.AccessAssignment` only | `iam.UserRole` dropped | — |
+| B3 | RBAC Correctness | Enforce workflow & uniqueness | Status CHECK + Unique Active Index + FK AssignedBy | No duplicate Active assignments possible | B2 |
+| B4 | Permissions | Role-permission uniqueness | Unique index on `RolePermission(RoleId,PermissionId)` | No duplicates possible | B3 |
+| B5 | ABAC | Tenant-safe scopes | `DataScope.UserSecurityScope.TenantId NOT NULL` | Scopes are tenant-scoped | — |
+| B6 | RLS Pattern Proof | RLS proven on 1 table | Predicate + wrapper + policy on `Project.Projects` | Wrong tenant returns 0 rows | — |
+
+---
+
+## C) Backend Security Wiring (WebHost) — Core of Phase 2
+
+| Step ID | Scope | Goal | Output | Done when | Depends on |
+|---|---|---|---|---|---|
+| C1 | Config | DB connection works | Connection string configured (dev) | WebHost can connect to SQL Server | A1 |
+| C2 | Identity Resolution | Resolve `(provider, issuer, subject)` → `UserId` | IAM query service in `IAM.Infrastructure` | Given token claims, returns UserId or 401 | C1 |
+| C3 | Tenant Resolution | Resolve `UserId → TenantId` | Tenant resolver service | TenantId always comes from DB | C2 |
+| C4 | Permission Engine | Compute permission set for user | Permission service | Returns flattened permission codes | C3 |
+| C5 | DB Session Context | Activate RLS per request | Session context setter | Every request sets `UserId`,`TenantId` | C3 |
+| C6 | Auth Pipelines | Two auth flows | Entra JWT validation + Local JWT validation | 401/403 behavior correct | C2–C5 |
+| C7 | Access Profile Endpoint | App Shell contract | `GET /api/me/access-profile` | Matches contract & drives UI | C4–C6 |
+| C8 | Smoke Tests | Prove security end-to-end | Minimal integration tests | RLS+perm+auth verified | C7 |
+
+---
+
+## D) App Shell (Frontend) — Skeleton Only (Phase 2)
+
+| Step ID | Scope | Goal | Output | Done when | Depends on |
+|---|---|---|---|---|---|
+| D1 | App Shell Project | Create frontend project | `/app-shell` created | Runs locally | A6 |
+| D2 | Login UX | Two entry points | Entra login button + Partner login form | Both produce token | C6 |
+| D3 | Access Profile Consumption | Single source of truth | Access profile stored globally | UI waits for access profile before rendering | C7 |
+| D4 | Sidebar Builder | Feature + permission gating | Sidebar from Access Profile | Modules hidden correctly | D3 |
+| D5 | Route Guards | Guard every route | Feature guard + permission guard | Forbidden routes blocked | D4 |
+| D6 | Experiences | Admin/Partner/Donor/Executive shells | Experience landing pages | Correct experience loads | D5 |
+| D7 | Route Map Scaffolding | Placeholder screens for modules | Routes exist per `route-map.md` | Navigation works end-to-end | D5 |
+
+---
+
+## E) Phase 2 Exit Criteria (When we say “Phase 2 done”)
+
+| Category | Must be true |
+|---|---|
+| Backend | Auth works (Entra + Local), Access Profile works, DB session context applied on every request |
+| Security | API permissions enforced (403), RLS enforced (rows filtered), smoke tests passing |
+| UI | App Shell loads, experiences switch, sidebar/routes driven by Access Profile, placeholders exist |
+| Deployment-ready | One backend executable (WebHost) + separate App Shell build |
+
+---
+
+## F) Phase 3 (Start Module-by-Module Delivery)
+
+| Step ID | Scope | Goal | Output | Done when |
+|---|---|---|---|---|
+| F1 | Module Onboarding | For each module: DDL review → RLS per table → permissions → endpoints → UI screens | Module playbook + first module live | Module works end-to-end |
+| F2 | Projects First | Implement Projects module vertical slices | List/Details/Create/Edit with RLS | CRUD works + permissions enforced |
+| F3 | Donors / Donations | Repeat pattern | Same | Same |
+
