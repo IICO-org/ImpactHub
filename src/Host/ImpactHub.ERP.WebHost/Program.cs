@@ -21,8 +21,8 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
 
-
 builder.Services.AddAuthorization();
+
 // =====================
 // AUTHORIZATION (Permission enforcement)
 // =====================
@@ -31,7 +31,22 @@ builder.Services.AddAuthorization();
 // Implementation uses the IAM Access Profile (cached per TenantId+UserId).
 builder.Services.AddImpactHubAuthorization();
 
-
+// =====================
+// CORS (App Shell Dev Server)
+// =====================
+// Browsers ENFORCE CORS. Postman does NOT.
+// React dev server runs on http://localhost:5173
+// This policy allows the App Shell to call the API during development ONLY.
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AppShellDev", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 // =====================
 // Per-request identity contexts (SharedKernel)
@@ -41,7 +56,7 @@ builder.Services.AddScoped<CurrentUserContext>();
 builder.Services.AddScoped<ICurrentUser>(sp => sp.GetRequiredService<CurrentUserContext>());
 
 // =====================
-// SaaS Gate + ONE-SHOT UserId resolution using ExternalIdentityKey (NO middleware guessing)
+// SaaS Gate + ONE-SHOT UserId resolution using ExternalIdentityKey
 // =====================
 builder.Services.Configure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
 {
@@ -80,13 +95,12 @@ builder.Services.Configure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSch
                 return;
             }
 
-            // Build external identity key (solid contract)
             var externalIdentity = new ExternalIdentityKey(
                 Provider: "entra",
                 Issuer: issuer!,
                 SubjectId: oid!);
 
-            // Tenant allowlist (config gate)
+            // Tenant allowlist
             var allowedTenants = context.HttpContext.RequestServices
                 .GetRequiredService<IConfiguration>()
                 .GetSection("AzureAd:AllowedTenants")
@@ -98,7 +112,6 @@ builder.Services.Configure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSch
                 return;
             }
 
-            // Resolve internal UserId from iam.UserIdentities (entra + issuer + oid)
             var resolver = context.HttpContext.RequestServices
                 .GetRequiredService<Modules.IAM.Application.Abstractions.IIdentityResolver>();
 
@@ -108,28 +121,17 @@ builder.Services.Configure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSch
                 subjectId: externalIdentity.SubjectId,
                 cancellationToken: context.HttpContext.RequestAborted);
 
-            Console.WriteLine($"[JWT] Identity mapping result: userId={(userId.HasValue ? userId.Value.ToString() : "NULL")}");
-
             if (!userId.HasValue)
             {
-                // Fail authentication so controllers never run
                 context.Fail("User identity is not mapped in iam.UserIdentities.");
                 return;
             }
 
-            // Set internal current user (what application code depends on)
             var currentUser = context.HttpContext.RequestServices.GetRequiredService<CurrentUserContext>();
             currentUser.Set(tenantId, userId.Value);
 
-            // Also set external identity context (useful for auditing)
             var ric = context.HttpContext.RequestServices.GetRequiredService<RequestIdentityContext>();
             ric.Set(tenantId, externalIdentity.Provider, externalIdentity.Issuer, externalIdentity.SubjectId);
-        },
-
-        OnChallenge = context =>
-        {
-            Console.WriteLine($"[JWT] OnChallenge: error='{context.Error}' desc='{context.ErrorDescription}' uri='{context.ErrorUri}'");
-            return Task.CompletedTask;
         }
     };
 });
@@ -155,6 +157,13 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+// =====================
+// HTTP PIPELINE
+// =====================
+
+// CORS must run BEFORE auth for browser preflight (OPTIONS)
+app.UseCors("AppShellDev");
 
 app.UseHttpsRedirection();
 

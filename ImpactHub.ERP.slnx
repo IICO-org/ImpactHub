@@ -1,5 +1,11 @@
 <Solution>
   <Folder Name="/src/" />
+  <Folder Name="/src/app-shell/">
+    <Project Path="src/App-shell/ImpactHub.AppShell/impacthub.appshell.esproj">
+      <Build />
+      <Deploy />
+    </Project>
+  </Folder>
   <Folder Name="/src/Host/">
     <Project Path="src/Host/ImpactHub.ERP.WebHost/ImpactHub.ERP.WebHost.csproj" />
   </Folder>

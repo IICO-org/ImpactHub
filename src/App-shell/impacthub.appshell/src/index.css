@@ -1,0 +1,111 @@
+/* ============================================================
+   ImpactHub App Shell Theme (D365/Viva-like)
+   ============================================================ */
+
+/* Base reset + full canvas */
+html, body, #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* Theme tokens */
+:root {
+    --ms-blue: #0f6cbd;
+    --ms-blue-hover: #115ea3;
+    --bg: #f3f6fb;
+    --surface: #ffffff;
+    --surface-2: #f8fbff;
+    --text: #1f2328;
+    --muted: #5b6b7a;
+    --border: #d0d7de;
+    --radius: 12px;
+    --radius-sm: 10px;
+    --shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* Body defaults */
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Links */
+a {
+    color: var(--text);
+}
+
+    a:hover {
+        color: var(--ms-blue);
+    }
+
+/* Buttons */
+button {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
+}
+
+    button:hover {
+        background: var(--surface-2);
+    }
+
+    button:active {
+        transform: translateY(1px);
+    }
+
+    button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+/* “Primary button” helper class (optional) */
+.btn-primary {
+    border-color: var(--ms-blue);
+    background: var(--ms-blue);
+    color: #fff;
+    font-weight: 700;
+}
+
+    .btn-primary:hover {
+        background: var(--ms-blue-hover);
+        border-color: var(--ms-blue-hover);
+    }
+
+/* Inputs */
+input, textarea, select {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    background: var(--surface);
+    color: var(--text);
+    outline: none;
+    box-sizing: border-box;
+}
+
+    input:focus, textarea:focus, select:focus {
+        border-color: var(--ms-blue);
+        box-shadow: 0 0 0 3px rgba(15,108,189,0.15);
+    }
+
+/* Cards / surfaces (useful for our page shells) */
+.surface {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+/* Subtle top-level shadow option */
+.surface-shadow {
+    box-shadow: var(--shadow);
+}
